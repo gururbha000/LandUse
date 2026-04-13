@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAHD – Land Use Options</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root{
+      --lahd-blue:#3f6177;
+      --lahd-bg:#f4f6f8;
+      --border:#d6d6d6;
+      --text-dark:#1f2f3a;
+
+      --sidebar-width:280px;
+      --card-bg:#ffffff;
+      --muted:#5b6770;
+    }
+
+    *{ box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+    body{ margin:0; background:var(--lahd-bg); color:var(--text-dark); }
+
+    /* ================= HEADER ================= */
+    .header{
+      height:72px;
+      background:var(--lahd-blue);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+    }
+    .header-left{ display:flex; align-items:center; gap:18px; }
+    .header-left img{ height:46px; background:#fff; padding:4px 6px; border-radius:4px; }
+    .header-title{ font-size:20px; font-weight:bold; }
+    .header-right{ display:flex; align-items:center; gap:16px; font-size:14px; }
+    .header-right select{ padding:4px; }
+
+    /* ================= LAYOUT ================= */
+    .layout{ display:flex; min-height:calc(100vh - 72px); }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar{
+      width:var(--sidebar-width);
+      background:#fff;
+      border-right:1px solid var(--border);
+      padding:20px;
+    }
+    .sidebar .btn{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px;
+      border-radius:6px;
+      font-weight:bold;
+      text-align:center;
+      margin-bottom:20px;
+    }
+    .sidebar p{ font-size:13px; color:#333; margin:0 0 18px; line-height:1.35; }
+
+    /* Recommended Browsers card */
+    .browser-card{
+      margin-top: 18px;
+      background: #ffffff;
+      border: 2px solid #cfcfcf;
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .browser-card h4{
+      margin:0 0 12px;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .browser-grid{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px 10px;
+      align-items: start;
+    }
+    .browser-item{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      text-align:center;
+    }
+    .browser-icon{
+      width: 25px !important;
+      height: 25px !important;
+      max-width: 42px !important;
+      max-height: 42px !important;
+      object-fit: contain;
+      display: block;
+    }
+    .browser-name{
+      font-size:10px;
+      color:#2f3542;
+      line-height:1.05;
+      font-weight:500;
+    }
+    .browser-name span{ display:block; }
+
+    @media (max-width: 520px){
+      .browser-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* ================= CONTENT ================= */
+    .content{
+      flex:1;
+      padding:40px;
+      overflow-y:auto;
+    }
+
+    .section-header{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px 20px;
+      font-size:18px;
+      border-radius:6px;
+      margin-top:10px;
+    }
+    .section-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:24px;
+      margin-top:18px;
+    }
+
+    /* ================= BUTTON OPTIONS ================= */
+    .options{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+
+    .option-btn{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:var(--card-bg);
+      padding:16px 16px 14px;
+      cursor:pointer;
+      transition: box-shadow .15s ease, border-color .15s ease, transform .05s ease, background .15s ease;
+    }
+    .option-btn:hover{
+      box-shadow:0 6px 16px rgba(0,0,0,.06);
+      border-color:#c9c9c9;
+    }
+    .option-btn:active{ transform: translateY(1px); }
+
+    .option-btn .top-row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .option-title{
+      margin:0;
+      font-size:16px;
+      font-weight:800;
+      color:var(--text-dark);
+      line-height:1.25;
+    }
+    .option-text{
+      margin:8px 0 0;
+      font-size:13px;
+      color:#2f3542;
+      line-height:1.45;
+    }
+
+    .option-meta{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      color:#2f3542;
+      background:#f3f6f8;
+      border:1px solid #e0e6ea;
+      border-radius:999px;
+      padding:6px 10px;
+    }
+
+    .check{
+      flex:0 0 auto;
+      width:28px;
+      height:28px;
+      border-radius:999px;
+      border:1px solid #d6d6d6;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:transparent;
+      background:#fff;
+      margin-top:2px;
+    }
+
+    .option-btn.selected{
+      border-color: var(--lahd-blue);
+      box-shadow: 0 10px 22px rgba(63,97,119,.14);
+      background: #fbfcfd;
+    }
+    .option-btn.selected .check{
+      border-color: var(--lahd-blue);
+      background: var(--lahd-blue);
+      color:#fff;
+    }
+
+    .assist-row{
+      margin-top:14px;
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+    }
+    .btn-secondary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:#e5e7eb;
+      color:#333;
+      border:1px solid #ccc;
+    }
+    .btn-primary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:var(--lahd-blue);
+      color:#fff;
+      border:none;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      :root{ --sidebar-width: 0px; }
+      .sidebar{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="LA_HCID_Logo_Web_1.png" alt="Los Angeles Housing Department Logo" />
+      <div class="header-title">Replacement Unit Determination</div>
+    </div>
+    <div class="header-right">
+      Thanh Ngo
+      <select>
+        <option>Select Language</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="btn">Land Use </div>
+      <p>
+        The Resident Protections Ordinance ("RPO") prohibits the approval of any proposed development project (“Project”)
+on a site (“Property”) that will require demolition of existing residential dwelling units, or occupied or vacant
+Protected Units, unless the Project replaces those units as specified below. The provisions of the RPO apply to all
+development projects approved by the City on or after February 11, 2025 that involve the demolition or removal of a
+dwelling unit, with exceptions for certain industrial projects. The RPO states that the obligation to replace
+Protected Units does not apply to any units demolished prior to January 1, 2020. 
+      </p>
+
+      <div class="browser-card" aria-label="Recommended browsers">
+        <h4>Recommended Browser</h4>
+        <div class="browser-grid">
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" alt="Google Chrome" />
+            <div class="browser-name"><span>Google</span><span>Chrome</span></div>
+          </div>
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/9/98/Microsoft_Edge_logo_%282019%29.svg" alt="Microsoft Edge" />
+            <div class="browser-name"><span>Microsoft</span><span>Edge</span></div>
+          </div>
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" alt="Mozilla Firefox" />
+            <div class="browser-name"><span>Mozilla</span><span>Firefox</span></div>
+          </div>
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.svg" alt="Apple Safari" />
+            <div class="browser-name"><span>Apple</span><span>Safari</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="section-header">Land Use Options</div>
+      <div class="section-card">
+        <div class="options" role="list" aria-label="Land use options">
+
+          <button type="button" class="option-btn" data-value="rpo_rud" aria-pressed="false">
+            <div class="top-row">
+              <h3 class="option-title">Application for a RPO Replacement Unit Determination (RUD)</h3>
+              <div class="check" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
+            </div>
+            <p class="option-text">
+              Projects subject to the RPO that do not qualify to utilize the No Net Loss Declaration must complete an application for an
+              RPO Replacement Unit Determination (RUD) with LAHD. Information provided by the applicant and existing tenant(s), as
+              well as information gathered by LAHD, will be used to determine whether any Protected Units and affordable Protected Units exist.
+            </p>
+            <p class="option-text">
+              An RPO RUD can take <strong>12 to 16 weeks</strong> to process upon receipt of all the required documents. The RPO RUD for projects that qualify for processing under
+              <strong>Executive Directive 1</strong> may be completed within <strong>30 days</strong> upon receipt of all required documents. The RPO RUD for projects that qualify for processing under
+              <strong>Executive Directive 7</strong> will be processed in an expedited manner.
+            </p>
+            <p class="option-text">
+              Owners will be provided with the completed RPO RUD and a copy will be sent to LACP for discretionary projects or LADBS for ministerial (by-right) projects.
+              For questions about the RPO RUD application or process, please contact <strong>LAHD at LAHD-LandUse@lacity.org</strong>.
+            </p>
+            <div class="option-meta">
+              <span class="pill"><i class="fa-regular fa-clock"></i> 12–16 weeks typical</span>
+              <span class="pill"><i class="fa-solid fa-bolt"></i> ED1 ~30 days</span>
+              <span class="pill"><i class="fa-solid fa-building"></i> LAHD issues RUD</span>
+            </div>
+          </button>
+
+          <button type="button" class="option-btn" data-value="replace_residential_units" aria-pressed="false">
+            <div class="top-row">
+              <h3 class="option-title">COVENANT </h3>
+              <div class="check" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
+            </div>
+            <p class="option-text">
+              The Project shall provide at least as many residential dwelling units as the greatest number of residential dwelling units that existed on the Property within the past <strong>5 years</strong>.
+              The affordable replacement units will be restricted in the future project at California Department of Housing and Community Investment (HCD) rents per <strong>Land Use Schedule 6</strong>.
+            </p>
+            <div class="option-meta">
+              <span class="pill"><i class="fa-solid fa-list-ol"></i> Match max units (5 years)</span>
+              <span class="pill"><i class="fa-solid fa-hand-holding-dollar"></i> HCD rents (Schedule 6)</span>
+            </div>
+          </button>
+
+   
+
+        </div>
+
+        <!-- Optional helper buttons (NOT a fixed footer) -->
+        <div class="assist-row">
+          <button type="button" class="btn-secondary" onclick="clearSelection()">Clear</button>
+          <button type="button" class="btn-primary" onclick="continueNext()">Continue</button>
+        </div>
+
+        <input type="hidden" id="selectedOption" name="selectedOption" value="" />
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const optionButtons = Array.from(document.querySelectorAll(".option-btn"));
+    const selectedOptionInput = document.getElementById("selectedOption");
+
+    function setSelected(value){
+      selectedOptionInput.value = value;
+
+      optionButtons.forEach(btn => {
+        const isSelected = btn.getAttribute("data-value") === value;
+        btn.classList.toggle("selected", isSelected);
+        btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      });
+    }
+
+    function clearSelection(){
+      selectedOptionInput.value = "";
+      optionButtons.forEach(btn => {
+        btn.classList.remove("selected");
+        btn.setAttribute("aria-pressed", "false");
+      });
+    }
+
+    function continueNext(){
+      const selected = selectedOptionInput.value;
+      if(!selected){
+        alert("Please select one option to continue.");
+        return;
+      }
+
+      // Persist the user's choice for the next page(s)
+      try{ sessionStorage.setItem('landuse_selectedOption', selected); }catch(e){}
+
+      // Simple routing
+      if(selected === 'rpo_rud'){
+        window.location.href = 'LD_APN.html';
+        return;
+      }
+
+      // TODO: route other options as you add the other application pages
+      alert("Selected option: " + selected + "\n\nRouting for this option has not been wired yet.");
+    }
+
+    optionButtons.forEach(btn => {
+      btn.addEventListener("click", () => setSelected(btn.getAttribute("data-value")));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAHD – Replacement Unit Determination</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root{
+      --lahd-blue:#3f6177;
+      --lahd-bg:#f4f6f8;
+      --border:#d6d6d6;
+      --text-dark:#1f2f3a;
+
+      /* footer sizing (used to prevent overlap) */
+      --footer-height:72px;
+      --sidebar-width:280px;
+    }
+
+    *{ box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+
+    body{ margin:0; background:var(--lahd-bg); }
+
+    /* ================= HEADER ================= */
+    .header{
+      height:72px;
+      background:var(--lahd-blue);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+    }
+    .header-left{ display:flex; align-items:center; gap:18px; }
+    .header-left img{ height:46px; background:#fff; padding:4px 6px; border-radius:4px; }
+    .header-title{ font-size:20px; font-weight:bold; }
+    .header-right{ display:flex; align-items:center; gap:16px; font-size:14px; }
+    .header-right select{ padding:4px; }
+
+    /* ================= LAYOUT ================= */
+    .layout{
+      display:flex;
+      min-height:calc(100vh - 72px);
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar{
+      width:var(--sidebar-width);
+      background:#fff;
+      border-right:1px solid var(--border);
+      padding:20px;
+    }
+    .sidebar .btn{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px;
+      border-radius:6px;
+      font-weight:bold;
+      text-align:center;
+      margin-bottom:20px;
+    }
+    .sidebar p{ font-size:13px; color:#333; margin-bottom:24px; }
+
+    /* ================= CONTENT ================= */
+    .content{
+      flex:1;
+      padding:40px;
+      overflow-y:auto;
+      /* KEY FIX: reserve space for fixed footer so it never overlaps content */
+      padding-bottom:calc(40px + var(--footer-height));
+    }
+
+    .page-title{
+      text-align:center;
+      font-size:34px;
+      margin-bottom:30px;
+      color:var(--text-dark);
+    }
+
+    /* ================= SECTIONS ================= */
+    .section-header{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px 20px;
+      font-size:18px;
+      border-radius:6px;
+      margin-top:40px;
+    }
+    .section-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:24px;
+      margin-top:20px;
+    }
+    .help-box{
+      background:#f0f0f0;
+      padding:14px;
+      border-radius:6px;
+      font-size:14px;
+      margin-bottom:0;
+    }
+
+    /* ================= FORM ================= */
+    .grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:20px 30px; }
+    .field{ display:flex; flex-direction:column; }
+    .field-stack{ display:flex; flex-direction:column; gap:20px; }
+    label{ font-weight:bold; font-size:14px; margin-bottom:6px; }
+    .required{ color:#c00000; }
+    input, select, textarea{
+      padding:10px;
+      font-size:14px;
+      border:1px solid #bbb;
+      border-radius:4px;
+      background:#fff;
+    }
+    textarea{ min-height:90px; }
+    .full{ grid-column:1 / -1; }
+    .note{ font-size:12px; color:#555; margin-top:6px; }
+
+    /* ================= ATTACHMENTS ================= */
+    .attachment-list{ list-style:none; padding:0; margin:0; }
+    .attachment-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:12px;
+      padding:8px;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:4px;
+    }
+    .attach-label{ flex:1; font-size:14px; font-weight:bold; }
+    .icon-btn{ width:22px; height:22px; cursor:pointer; fill:var(--lahd-blue); transition: opacity .15s ease; }
+    .icon-btn:hover{ opacity:0.75; }
+    .filename{ font-size:14px; color:#333; flex:1; margin-left:8px; }
+
+    /* ================= TABLE ================= */
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:24px;
+      background:#fff;
+      border-radius:6px;
+      overflow:hidden;
+    }
+    thead{ background:var(--lahd-blue); color:#fff; }
+    th, td{
+      padding:12px 10px;
+      font-size:13px;
+      border-bottom:1px solid #ddd;
+      text-align:left;
+    }
+    th{ font-weight:bold; }
+    tbody tr:nth-child(even){ background:#f9f9f9; }
+    tbody tr:hover{ background:#eef4f7; }
+
+    /* Docs review upload controls */
+    .upload-cell{ display:flex; align-items:center; gap:10px; }
+    .docs-review-table .filename{ margin-left:0; }
+
+    /* ================= FOOTER ACTION BAR ================= */
+    .footer-actions{
+      position:fixed;
+      bottom:0;
+      left:var(--sidebar-width);
+      right:0;
+      height:var(--footer-height);
+      background:#fff;
+      border-top:1px solid var(--border);
+      padding:16px 40px;
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      z-index:9999;
+      align-items:center;
+    }
+
+    .footer-actions button{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+    }
+    .btn-secondary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:#e5e7eb;
+      color:#333;
+      border:1px solid #ccc;
+    }
+    .btn-primary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:var(--lahd-blue);
+      color:#fff;
+      border:none;
+    }
+
+    /* Recommended Browsers card */
+    .browser-card{
+      margin-top: 18px;
+      background: #ffffff;
+      border: 2px solid #cfcfcf;
+      border-radius: 14px;
+      padding: 22px 18px 18px;
+    }
+    .browser-grid{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px 14px;
+      align-items: start;
+    }
+    .browser-item{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+    .browser-icon{
+      width: 25px !important;
+      height: 25px !important;
+      max-width: 42px !important;
+      max-height: 42px !important;
+      object-fit: contain;
+      display: block;
+    }
+    .browser-name{
+      line-height: 1.05;
+      color: #2f3542;
+      font-weight: 500;
+      font-size: 10px;
+    }
+    .browser-name span{ display: block; }
+    @media (max-width: 520px){
+      .browser-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* ===== Existing Property mini-form (inside Existing Buildings) ===== */
+    .existing-property{
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .existing-property-title{
+      font-weight: 800;
+      margin: 0 0 12px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    .existing-property-title span{
+      font-weight: 600;
+      text-transform: none;
+    }
+    .existing-prop-input{
+      background: #eef3ff;
+      border-color: #d3dcf0;
+      height: 36px;
+    }
+    .existing-prop-inline{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .existing-prop-inline > *{
+      flex: 1 1 140px;
+    }
+    .existing-prop-date{
+      max-width: 220px;
+    }
+    @media (max-width: 840px){
+      .existing-prop-date{
+        max-width: none;
+      }
+    }
+  
+
+    /* ===== Corrections Needed + Required Docs Review ===== */
+    .decision-pill{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:bold;
+      border:1px solid #d1d5db;
+      background:#f3f4f6;
+      color:#1f2f3a;
+    }
+    .decision-ok{ background:#e8f5e9; border-color:#a7d7b0; }
+    .decision-bad{ background:#fdecea; border-color:#f3b7b0; }
+
+    .docs-review-card{
+      margin-top: 12px;
+    }
+    .docs-review-table select,
+    .docs-review-table input{
+      width:100%;
+      padding:10px;
+      font-size:13px;
+      border:1px solid #bbb;
+      border-radius:4px;
+      background:#fff;
+    }
+    .docs-review-table td:nth-child(2){ width:190px; }
+    .docs-review-table td:nth-child(3){ width:360px; }
+    @media (max-width: 860px){
+      .docs-review-table td:nth-child(2),
+      .docs-review-table td:nth-child(3){ width:auto; }
+    }
+	
+	/* Shrink Document name column */
+.docs-review-table{
+  table-layout: fixed; /* helps enforce column widths */
+}
+
+.docs-review-table th:nth-child(1),
+.docs-review-table td:nth-child(1){
+  width: 500px;        /* <-- adjust this number */
+  max-width: 600px;
+  white-space: normal; /* allow wrapping */
+  overflow-wrap: anywhere;
+}
+
+
+  </style>
+</head>
+
+<body>
+  <!-- ================= HEADER ================= -->
+  <div class="header">
+    <div class="header-left">
+      <img src="LA_HCID_Logo_Web_1.png" alt="Los Angeles Housing Department Logo" />
+      <div class="header-title">Replacement Unit Determination</div>
+    </div>
+
+    <div class="header-right">
+      Thanh Ngo
+      <select>
+        <option>Select Language</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="btn">Replacement Unit Determination</div>
+      <p>
+        This application is used to determine replacement housing requirements
+        pursuant to the Resident Protections Ordinance (LAMC 16.60).<br /><br />
+        To receive a Replacement Unit Determination, please complete the following and attach
+        all required documentation. Please attach an explanation for any information you are
+        unable to provide. Please put project address at the top of all attachment pages submitted.
+      </p>
+
+      <div class="browser-card" aria-label="Recommended browsers">
+        Recommended Browser <br><br>
+        <div class="browser-grid">
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" alt="Google Chrome" />
+            <div class="browser-name"><span>Google</span><span>Chrome</span></div>
+          </div>
+
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/9/98/Microsoft_Edge_logo_%282019%29.svg" alt="Microsoft Edge" />
+            <div class="browser-name"><span>Microsoft</span><span>Edge</span></div>
+          </div>
+
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" alt="Mozilla Firefox" />
+            <div class="browser-name"><span>Mozilla</span><span>Firefox</span></div>
+          </div>
+
+          <div class="browser-item">
+            <img class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.svg" alt="Apple Safari" />
+            <div class="browser-name"><span>Apple</span><span>Safari</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="content">
+      <div class="page-title">Replacement Unit Determination Submission</div>
+
+      <!-- CORRECTION NEEDED -->
+      <div class="section-header">Correction Needed</div>
+      <div class="section-card">
+        <div class="help-box">
+          The following required documents were reviewed and marked as needing revision.
+        </div>
+
+        <div id="correctionsContainer" style="margin-top:14px;"></div>
+        <div id="approvalsContainer" style="margin-top:18px;"></div>
+      </div>
+
+
+      <!-- PROPERTY OWNER -->
+      <div class="section-header">Property Owner</div>
+      <div class="section-card">
+        <div class="grid">
+          <div class="field"><label>Name</label><input /></div>
+          <div class="field"><label>Contact Person</label><input /></div>
+          <div class="field"><label>Address</label><input /></div>
+          <div class="field"><label>Phone</label><input /></div>
+          <div class="field"><label>Fax</label><input /></div>
+          <div class="field"><label>Cell</label><input /></div>
+          <div class="field full"><label>Email</label><input /></div>
+        </div>
+      </div>
+
+      <!-- OWNER CONTACT -->
+      <div class="section-header">Owner Contact</div>
+      <div class="section-card">
+        <div class="grid">
+          <div class="field"><label>Title</label><input /></div>
+          <div class="field"><label>Contact Person</label><input /></div>
+          <div class="field"><label>Address</label><input /></div>
+          <div class="field"><label>Phone</label><input /></div>
+          <div class="field"><label>Fax</label><input /></div>
+          <div class="field"><label>Cell</label><input /></div>
+          <div class="field full"><label>Email</label><input /></div>
+        </div>
+      </div>
+
+      <!-- APPLICANT -->
+      <div class="section-header">Applicant (If different from Owner)</div>
+      <div class="section-card">
+        <div class="grid">
+          <div class="field"><label>Name</label><input /></div>
+          <div class="field"><label>Contact Person</label><input /></div>
+          <div class="field"><label>Address</label><input /></div>
+          <div class="field"><label>Phone</label><input /></div>
+          <div class="field"><label>Fax</label><input /></div>
+          <div class="field"><label>Cell</label><input /></div>
+          <div class="field full"><label>Email</label><input /></div>
+        </div>
+      </div>
+
+      <!-- PROJECT INFORMATION -->
+      <div class="section-header">Project Information</div>
+      <div class="section-card">
+        <div class="grid">
+          <div class="field">
+            <label>Project Type</label>
+            <div class="note">* Project Type (Hold CTRL to Choose Multiple Types).</div>
+            <select multiple size="6">
+              <option value="Density Bonus">Density Bonus</option>
+              <option value="TOC">TOC</option>
+              <option value="PSH Ordinance">PSH Ordinance</option>
+              <option value="JJJ">JJJ</option>
+              <option value="Zoning Variance">Zoning Variance</option>
+              <option value="Recs and Parks Exemption">Recs and Parks Exemption</option>
+              <option value="RSO Exemption">RSO Exemption</option>
+              <option value="Specific Plan Adjustment">Specific Plan Adjustment</option>
+              <option value="SB 35">SB 35</option>
+              <option value="AB 2162">AB 2162</option>
+              <option value="Senior Housing Project">Senior Housing Project</option>
+              <option value="Mello">Mello</option>
+              <option value="Residential Hotel">Residential Hotel</option>
+              <option value="CHIP">CHIP</option>
+              <option value="SB 684/SB 1123">SB 684/SB 1123</option>
+            </select>
+          </div>
+
+          <div class="field-stack">
+            <div class="field">
+              <label>Proposed Project Type</label>
+              <select>
+                <option value="">-- Select --</option>
+                <option>Rental Unit</option>
+                <option>Unit For Sale</option>
+                <option>Small Lot Subdivision</option>
+                <option>100% Affordable Housing Project</option>
+                <option>ED 1 100% Affordable Housing Project</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Entitlements with DCP?</label>
+              <select><option>No</option><option>Yes</option></select>
+            </div>
+
+            <div class="field">
+              <label>Subject to URA?</label>
+              <select><option>No</option><option>Yes</option></select>
+            </div>
+          </div>
+
+          <div class="field full">
+            <label><input type="checkbox" /> Palisades Fire Rebuild</label>
+            <div class="note">* Permitting fees for rebuildings of SFDs and duplexes are suspended per EO7.</div>
+          </div>
+
+          <div class="field full">
+            <label>Description of Proposed Construction / Conversion</label>
+            <textarea></textarea>
+          </div>
+
+          <div class="field">
+            <label>Not subject to the RPO due to vesting prior to February 11, 2025*</label>
+            <div class="note">* Project may still be subject to the Housing Crisis Act of 2019.<br /><br />Choose 1 of the following:</div>
+            <select>
+              <option>N/A</option>
+              <option>A Department of Building and Safety application was filed and fees paid per 13B.10 of Chapter 1A of the LAMC</option>
+              <option>A Department of City Planning preliminary application was filed, fees paid and complete per the Housing Crisis Act (HCA) (form CP13-4062)</option>
+              <option>A Department of City Planning entitlement application was filed for vesting zone changes, general plan amendments and subdivisions</option>
+            </select>
+          </div>
+
+          <div class="field-stack">
+            <div class="field">
+              <label>LADBS Building Permit Number(s)</label>
+              <input />
+            </div>
+
+            <div class="field">
+              <label>LADBS Demolition Permit Number(s)</label>
+              <input />
+            </div>
+
+            <div class="field">
+              <label>Department of City Planning Case Number(s)</label>
+              <input />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUILDINGS -->
+      <div class="section-header">Existing Buildings</div>
+      <div class="section-card">
+
+        <!-- Existing Property (2-column layout) -->
+        <div class="existing-property">
+          <div class="existing-property-title">
+            EXISTING PROPERTY
+            <span>(include ALL existing buildings within the last 5 years in complex - attach additional pages if needed)</span>
+          </div>
+
+          <div class="grid existing-prop-grid">
+            <div class="field">
+              <label for="ex_apn">APN Number(s):</label>
+              <input class="existing-prop-input" id="ex_apn" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="ex_lot">Lot Number(s):</label>
+              <input class="existing-prop-input" id="ex_lot" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="ex_coo">
+                Does this property have a Certificate of Occupancy issued on or before October 1, 1978?
+              </label>
+              <select class="existing-prop-input" id="ex_coo">
+                <option value="">Select</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="ex_lot_tie">Does this property have a recorded lot tie?</label>
+              <select class="existing-prop-input" id="ex_lot_tie">
+                <option value="">Select</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Unknown</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label for="ex_withdrawn">
+                Are there any residential dwelling units withdrawn from rent or lease within the last 10 years? If yes, provide the date:
+              </label>
+              <div class="existing-prop-inline">
+                <select class="existing-prop-input" id="ex_withdrawn">
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Unknown">Unknown</option>
+                </select>
+                <input class="existing-prop-input existing-prop-date" id="ex_withdrawn_date" type="date" aria-label="Withdrawal date (if yes)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Building Address / Unit #s</label>
+            <input id="b_address" />
+          </div>
+          <div class="field">
+            <label>Building Type</label>
+            <select id="b_type">
+              <option value="">Select One</option>
+              <option>Single Family</option>
+              <option>Duplex</option>
+              <option>Triplex</option>
+              <option>Apartment</option>
+            </select>
+          </div>
+          <div class="field">
+            <label># Bedrooms per Unit</label>
+            <input type="number" id="b_bedrooms" />
+          </div>
+          <div class="field">
+            <label># Units in Building</label>
+            <input type="number" id="b_units" />
+          </div>
+          <div class="field full">
+            <button type="button" class="btn-primary" onclick="addBuilding()">Add Building</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Address / Units</th>
+              <th>Type</th>
+              <th>Bedrooms</th>
+              <th># Units</th>
+            </tr>
+          </thead>
+          <tbody id="buildingsTable"></tbody>
+        </table>
+
+        <p style="text-align:right; font-weight:bold; margin-top:12px;">
+          Total Units in Complex: <span id="totalUnits">0</span>
+        </p>
+      </div>
+
+      <!-- Follow-up questions -->
+      <div class="field full"><br>
+        <label>Description of existing units, buildings or APN within the last five years:</label>
+        <textarea></textarea>
+      </div>
+
+      <h4>Expected dates for future project</h4>
+      <div class="grid">
+        <div class="field"><label>Expected Eviction Date(s) for current tenants(s)</label><input type="date" /></div>
+        <div class="field"><label>Expected date(s) to apply for new building permit(s)</label><input type="date" /></div>
+        <div class="field"><label>Expected date of first LADBS inspection on the new construction permit</label><input type="date" /></div>
+        <div class="field"><label>Expected date to receive Certificate of Occupancy</label><input type="date" /></div>
+      </div>
+
+      <!-- REQUIRED DOCUMENTS -->
+      <div class="section-header">Required Documents</div>
+      <div class="section-card docs-review-card">
+        <div class="note" style="margin-bottom:10px;">
+          Staff review: mark each required document as Approved or Rejected, provide a reason when rejected, and use the Template/Upload controls to download templates and attach files.
+        </div>
+        <div class="table-wrap" style="overflow-x:auto;">
+          <table class="docs-review-table" aria-label="Required documents review">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Decision</th>
+                <th>Reason</th>
+                <th style="width:120px;">Template</th>
+                <th style="min-width:280px;">Upload</th>
+              </tr>
+            </thead>
+            <tbody id="docsReviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <!-- TENANT TABLE -->
+      <div class="section-header">Tenant Information Table </div>
+
+      <div class="note">
+        *For single family dwellings (SFDs), information regarding the occupants of SFDs will also need to be provided.
+        <br><br>**Additional pages can be added, if necessary.
+      </div>
+
+      <div class="section-card">
+        <div class="grid">
+          <div class="field"><label>Project Address</label><input /></div>
+          <div class="field"><label>Owner Name</label><input /></div>
+          <div class="field"><label>Phone Number</label><input /></div>
+          <div class="field"><label>Email Address</label><input /></div>
+        </div>
+
+        <div class="section-card" style="margin-top:20px;">
+          <div class="grid">
+            <div class="field"><label>Name(s) of Occupant(s)</label><input type="text" id="t_name" /></div>
+            <div class="field"><label>Unit Number</label><input type="text" id="t_unit" /></div>
+            <div class="field"><label>Rent Amount</label><input type="number" step="0.01" id="t_rent" /></div>
+            <div class="field"><label>Occupancy Date</label><input type="date" id="t_date" /></div>
+            <div class="field"><label>Contact Number</label><input type="text" id="t_contact" /></div>
+            <div class="field"><label>Contact Email Address</label><input type="email" id="t_email" /></div>
+            <div class="field"><label># of Bedrooms</label><input type="number" min="0" id="t_bedrooms" /></div>
+            <div class="field"><label># of Bathrooms</label><input type="number" min="0" id="t_bathrooms" /></div>
+          </div>
+          <br />
+          <button type="button" class="btn-primary" onclick="addTenant()">Add Record</button>
+        </div>
+
+        <table id="occupantsTable">
+          <thead>
+            <tr>
+              <th>Name of Occupants</th>
+              <th>Unit Number</th>
+              <th>Rent Amount</th>
+              <th>Occupancy Date</th>
+              <th>Contact Number</th>
+              <th>Email Address</th>
+              <th># of Bedrooms</th>
+              <th># of Bathrooms</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= FOOTER ACTION BAR ================= -->
+  <div class="footer-actions" role="contentinfo" aria-label="Actions">
+    <button type="button" class="btn-secondary" onclick="saveDraft()">Save As Draft</button>
+    <button type="button" class="btn-primary" onclick="submitForm()">Submit</button>
+  </div>
+
+  <script>
+    /* ===== Existing Buildings ===== */
+    let totalUnits = 0;
+
+    function addBuilding(){
+      const addressEl = document.getElementById("b_address");
+      const typeEl = document.getElementById("b_type");
+      const bedroomsEl = document.getElementById("b_bedrooms");
+      const unitsEl = document.getElementById("b_units");
+
+      const address = addressEl.value.trim();
+      const type = typeEl.value.trim();
+      const bedrooms = bedroomsEl.value.trim();
+      const unitsStr = unitsEl.value.trim();
+
+      if (!address || !type || !unitsStr){
+        alert("Please complete all building fields.");
+        return;
+      }
+
+      const units = parseInt(unitsStr, 10);
+      if (Number.isNaN(units) || units < 0){
+        alert("Units must be a valid number.");
+        return;
+      }
+
+      const tbody = document.getElementById("buildingsTable");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${escapeHtml(address)}</td>
+        <td>${escapeHtml(type)}</td>
+        <td>${escapeHtml(bedrooms)}</td>
+        <td style="text-align:center;">${units}</td>
+      `;
+      tbody.appendChild(row);
+
+      totalUnits += units;
+      document.getElementById("totalUnits").textContent = totalUnits;
+
+      addressEl.value = "";
+      typeEl.value = "";
+      bedroomsEl.value = "";
+      unitsEl.value = "";
+    }
+
+    /* ===== Required Documents Upload List ===== */
+    const docs = [
+      "Applicant's Affidavit + Owner's Acknowledgment (with letter signed by owner of record and notarized)",
+      "Letter of Application<br>(List units within the last 5 years, including unit #, unit square footage, and number of bedrooms)",
+      "Tenant Information Table (Mandatory for Occupied Units)<br><br><br>• If unit is rented, list the occupant's name, unit number, rent amount, occupancy dates, contact information, and the bedroom type/count of the unit they occupied.<br>• If unit is not rented, explain its current use and give the date the last renter vacated",
+      "Tenant Income Certification Form",
+      "Owner Occupancy Proof:<br>• If the Homeowner Exemption was taken, provide copies of Property Tax documents for each year of the 5-year look-back period. The mailing address should match and the owner should not claim the Homeowner Exemption on any other property.<br>• If the Homeowner Exemption was NOT taken, provide copies of the owner's car registration, homeowner's insurance, or other LAHD-approved third-party documents within the 5-year look-back period.",
+      "Vacancy Proof:<br>• Provide a copy of the Department of Water and Power (DWP) bill with activity periods covering the date of application.<br>• For the purposes of affordable unit replacement exemption, if the property was vacant for the entirety of the 5-year look-back period, provide each DWP bill within the 5-year period",
+      "Grant Deed (Recorded)",
+      "Ellis documents, tenant relocation documents (RSO units), if applicable",
+      "City Planning Determination and/or Vesting/Tentative Tract Letters, if applicable"
+    ];
+
+    // ===== Required Documents Review (Decision + Reason) =====
+    function stripHtml(input){
+      return String(input || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    const requiredDocsState = docs.map((d, i) => ({
+      id: i,
+      label: stripHtml(d),
+      decision: "",
+      reason: "",
+      fileName: "",
+      staffFile: ""
+    }));
+
+    /* ===== Load staff decisions from Backend ===== */
+    const BACKEND_REVIEW_KEY = "LAHD_RUD_BACKEND_REVIEW";
+
+    function normalizeDecision(v){
+      const s = String(v || '').toLowerCase();
+      if(s === 'approve' || s === 'approved') return 'Approved';
+      if(s === 'reject' || s === 'rejected') return 'Rejected';
+      return '';
+    }
+
+    function docMatches(docLabel, backendName){
+      const a = String(docLabel || '').toLowerCase();
+      const b = String(backendName || '').toLowerCase();
+      if(!a || !b) return false;
+      // match by containment either way
+      return a.includes(b) || b.includes(a);
+    }
+
+    function tryLoadBackendReview(){
+      let raw = null;
+      try{ raw = localStorage.getItem(BACKEND_REVIEW_KEY); }catch(e){ raw = null; }
+      if(!raw) return;
+      let data = null;
+      try{ data = JSON.parse(raw); }catch(e){ data = null; }
+      if(!data || !Array.isArray(data.attachments)) return;
+
+      data.attachments.forEach(att => {
+        const idx = requiredDocsState.findIndex(d => docMatches(d.label, att.name));
+        if(idx < 0) return;
+
+        requiredDocsState[idx].decision = normalizeDecision(att.decision);
+        // show the latest applicant-uploaded file name (what the applicant previously submitted)
+        requiredDocsState[idx].fileName = String(att.applicantFile || '').trim();
+        requiredDocsState[idx].staffFile = String(att.staffFile || '').trim();
+
+        // pull reject reason from backend (if provided)
+        const rr = String(att.rejectReason || att.reason || '').trim();
+        if(requiredDocsState[idx].decision === 'Rejected'){
+          if(rr) requiredDocsState[idx].reason = rr;
+          else if(!requiredDocsState[idx].reason) requiredDocsState[idx].reason = 'Needs revision';
+        }
+      });
+    }
+    // If there's no backend review data loaded, you can optionally set demo defaults here.
+    // (We keep this off by default so real backend decisions show up.)
+
+    function decisionBadge(decision){
+      const v = (decision || "").toLowerCase();
+      if(v === "approved") return '<span class="decision-pill decision-ok">Approved</span>';
+      if(v === "rejected") return '<span class="decision-pill decision-bad">Rejected</span>';
+      return '<span class="decision-pill">Pending</span>';
+    }
+
+    function renderDocsReviewTable(){
+      const body = document.getElementById('docsReviewBody');
+      if(!body) return;
+      body.innerHTML = "";
+
+      requiredDocsState.forEach((d) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><div style="font-weight:bold;">${escapeHtml(d.label)}</div></td>
+          <td>
+            <select class="doc-decision" data-id="${d.id}">
+              <option value="" ${d.decision === '' ? 'selected' : ''}>-- Select --</option>
+              <option value="Approved" ${d.decision === 'Approved' ? 'selected' : ''}>Approved</option>
+              <option value="Rejected" ${d.decision === 'Rejected' ? 'selected' : ''}>Rejected</option>
+            </select>
+            <div style="margin-top:8px;">${decisionBadge(d.decision)}</div>
+          </td>
+          <td>
+            <input class="doc-reason" data-id="${d.id}" type="text" placeholder="Reason (required if rejected)" value="${escapeAttr(d.reason)}" />
+          </td>
+          <td>
+            <svg class="icon-btn template-btn-review" data-id="${d.id}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-label="Download template">
+              <title>Download template</title>
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm1 7V3.5L18.5 9H15zM12 19l-4-4h2.5v-3h3v3H16l-4 4z"/>
+            </svg>
+          </td>
+          <td>
+            <div class="upload-cell">
+              <input type="file" id="reviewFileInput${d.id}" style="display:none" />
+              <svg class="icon-btn upload-btn-review" data-id="${d.id}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-label="Upload">
+                <title>Upload</title>
+                <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.34v4h4.66V9h3.34L12 2z"/>
+              </svg>
+
+              <span class="filename" id="reviewFilename${d.id}">${escapeHtml(d.fileName || 'No file selected')}</span>
+
+              <svg class="icon-btn delete-btn-review" data-id="${d.id}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="${d.fileName ? '' : 'visibility:hidden'}" aria-label="Remove">
+                <title>Remove</title>
+                <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-4.5l-1-1z"/>
+              </svg>
+            </div>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+
+      body.querySelectorAll('.doc-decision').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const id = parseInt(sel.getAttribute('data-id'), 10);
+          const row = requiredDocsState.find(x => x.id === id);
+          if(row) row.decision = sel.value;
+          renderDocsReviewTable();
+          renderCorrections();
+        });
+      });
+
+      body.querySelectorAll('.doc-reason').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const id = parseInt(inp.getAttribute('data-id'), 10);
+          const row = requiredDocsState.find(x => x.id === id);
+          if(row) row.reason = inp.value;
+          renderCorrections();
+        });
+      });
+
+      // Template + Upload controls (re-wired on each render)
+      body.querySelectorAll('.template-btn-review').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-id'), 10);
+          downloadTemplate(id);
+        });
+      });
+
+      body.querySelectorAll('.upload-btn-review').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const input = document.getElementById(`reviewFileInput${id}`);
+          if(input) input.click();
+        });
+      });
+
+      requiredDocsState.forEach(d => {
+        const input = document.getElementById(`reviewFileInput${d.id}`);
+        if(!input) return;
+        input.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          const row = requiredDocsState.find(x => x.id === d.id);
+          if(row){
+            row.fileName = file ? file.name : "";
+          }
+          renderDocsReviewTable();
+          renderCorrections();
+        });
+      });
+
+      body.querySelectorAll('.delete-btn-review').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.getAttribute('data-id'), 10);
+          const row = requiredDocsState.find(x => x.id === id);
+          if(row) row.fileName = "";
+          const input = document.getElementById(`reviewFileInput${id}`);
+          if(input) input.value = "";
+          renderDocsReviewTable();
+          renderCorrections();
+        });
+      });
+    }
+
+    function renderCorrections(){
+      const host = document.getElementById('correctionsContainer');
+      if(!host) return;
+
+      const rejected = requiredDocsState.filter(d => (d.decision || '').toLowerCase() === 'rejected');
+      const approved = requiredDocsState.filter(d => (d.decision || '').toLowerCase() === 'approved');
+
+      const makeRows = (rows, includeReason) => rows.map(d => `
+        <tr>
+          <td>${escapeHtml(d.label)}</td>
+          <td style="width:140px;">${decisionBadge(d.decision)}</td>
+          <td>${escapeHtml(d.fileName || '—')}</td>
+${includeReason ? `<td>${escapeHtml(d.reason || 'Needs revision')}</td>` : ``}
+        </tr>
+      `).join('');
+
+      const section = (title, rows, emptyMsg, includeReason) => {
+        const headers = includeReason
+          ? `<tr>
+              <th>Document</th>
+              <th style="width:140px;">Decision</th>
+              <th>Applicant File</th>
+                            <th>Reject Reason</th>
+            </tr>`
+          : `<tr>
+              <th>Document</th>
+              <th style="width:140px;">Decision</th>
+              <th>Applicant File</th>
+                          </tr>`;
+
+        const body = rows.length
+          ? `<div style="overflow:auto; margin-top:10px;">
+              <table aria-label="${escapeHtml(title)}" class="docs-review-table">
+                <thead>${headers}</thead>
+                <tbody>${makeRows(rows, includeReason)}</tbody>
+              </table>
+            </div>`
+          : `<div style="opacity:.85;">${escapeHtml(emptyMsg)}</div>`;
+
+        return `
+          <div class="card" style="margin-top:14px;">
+            <div class="card-header">${escapeHtml(title)}</div>
+            <div class="card-body">
+              ${body}
+            </div>
+          </div>
+        `;
+      };
+
+      // If there is no review data at all, keep the page calm and readable
+      if(rejected.length === 0 && approved.length === 0){
+        host.innerHTML = '<div style="opacity:.85;">No document review results found yet.</div>';
+        return;
+      }
+
+      host.innerHTML = [
+        section('Rejected Documents', rejected, 'No documents were rejected.', true),
+        section('Approved Documents', approved, 'No documents were approved.', false),
+      ].join('');
+    }
+
+
+      
+
+// Load backend decisions (if any), then render
+    tryLoadBackendReview();
+    renderDocsReviewTable();
+    renderCorrections();
+
+    function downloadTemplate(idx){
+      // If you later have real template URLs/files, you can swap this for a direct link.
+      const raw = (docs[idx] || `Template ${idx+1}`).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      const safeName = raw
+        .slice(0, 60)
+        .replace(/[^a-z0-9\- _]/gi, "")
+        .replace(/\s+/g, "_")
+        .replace(/^_+|_+$/g, "") || `Template_${idx+1}`;
+
+      const filename = `${safeName}_Template.txt`;
+
+      const content =
+`TEMPLATE – ${raw}
+
+Instructions:
+- Replace this placeholder text with the official template content for this attachment.
+- Keep the Project Address at the top of each submitted page.
+
+(Template placeholder generated by the form UI.)`;
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    }
+
+    /* ===== Tenant Table ===== */
+    function addTenant(){
+      const nameEl = document.getElementById('t_name');
+      const unitEl = document.getElementById('t_unit');
+      const rentEl = document.getElementById('t_rent');
+      const dateEl = document.getElementById('t_date');
+      const contactEl = document.getElementById('t_contact');
+      const emailEl = document.getElementById('t_email');
+      const bedroomsEl = document.getElementById('t_bedrooms');
+      const bathroomsEl = document.getElementById('t_bathrooms');
+
+      const name = nameEl.value.trim();
+      const unit = unitEl.value.trim();
+      const rent = rentEl.value.trim();
+      const date = dateEl.value.trim();
+      const contact = contactEl.value.trim();
+      const email = emailEl.value.trim();
+      const bedrooms = bedroomsEl.value.trim();
+      const bathrooms = bathroomsEl.value.trim();
+
+      if (!name || !unit || !rent || !date || !contact || !email){
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      const tbody = document.querySelector('#occupantsTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(name)}</td>
+        <td>${escapeHtml(unit)}</td>
+        <td>${escapeHtml(rent)}</td>
+        <td>${escapeHtml(date)}</td>
+        <td>${escapeHtml(contact)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td style="text-align:center;">${escapeHtml(bedrooms)}</td>
+        <td style="text-align:center;">${escapeHtml(bathrooms)}</td>
+      `;
+      tbody.appendChild(tr);
+
+      nameEl.value = '';
+      unitEl.value = '';
+      rentEl.value = '';
+      dateEl.value = '';
+      contactEl.value = '';
+      emailEl.value = '';
+      bedroomsEl.value = '';
+      bathroomsEl.value = '';
+    }
+
+    /* ===== Footer actions ===== */
+    function saveDraft(){ alert("Draft saved (placeholder)."); }
+    function submitForm(){ alert("Form submitted (placeholder)."); }
+
+    /* ===== tiny helper to prevent HTML injection in tables ===== */
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+
+    function escapeAttr(str){
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    // Existing Property: show withdrawal date only when "Yes"
+    (function(){
+      const sel = document.getElementById("ex_withdrawn");
+      const date = document.getElementById("ex_withdrawn_date");
+      if(!sel || !date) return;
+
+      function sync(){
+        const v = (sel.value || "").toLowerCase();
+        const show = v === "yes";
+        date.style.display = show ? "block" : "none";
+        if(!show) date.value = "";
+      }
+      sel.addEventListener("change", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

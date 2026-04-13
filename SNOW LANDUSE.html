@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ServiceNow Nav Mock - Land Use</title>
+  <style>
+    :root{
+      --topbar:#0b1020;
+      --topbar-2:#111a2f;
+      --page-bg:#eef1f6;
+      --content-bg:#ffffff;
+      --nav-bg:#2b2f4f;
+      --nav-bg-2:#242948;
+      --nav-text:#e9edf7;
+      --nav-muted:#b9c2dc;
+      --border:#e5e9f2;
+      --table-head:#f3f5f9;
+      --table-row:#ffffff;
+      --filter-bg:#ffffff;
+      --filter-border:#7aa7ff;
+      --accent:#5aa2ff;
+      --shadow: 0 10px 24px rgba(0,0,0,.25);
+      --radius: 14px;
+    }
+    *{ box-sizing:border-box; font-family: Arial, Helvetica, sans-serif; }
+    body{ margin:0; background:var(--page-bg); color:#111827; }
+
+    .topbar{
+      height:56px;
+      background:linear-gradient(180deg, var(--topbar), var(--topbar-2));
+      display:flex; align-items:center;
+      padding:0 16px; gap:14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .brand{ display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; min-width:160px; }
+    .brand .logo{
+      width:26px;height:26px;border-radius:6px;
+      background:linear-gradient(135deg,#ffb703,#219ebc);
+      display:grid;place-items:center;
+      font-size:13px;color:#08101c;font-weight:900;
+    }
+    .app-pill{
+      margin-left:6px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      color:#fff;
+      padding:7px 12px;
+      border-radius:999px;
+      display:flex; align-items:center; gap:8px;
+      font-weight:700; min-width:240px; justify-content:center;
+    }
+    .app-pill .star{ color:#ffd166; }
+    .top-spacer{ flex:1; }
+    .top-search{
+      width:min(520px, 38vw);
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:10px;
+      display:flex; align-items:center; gap:10px;
+      padding:8px 10px; color:#fff;
+    }
+    .top-search input{ flex:1; background:transparent; border:0; outline:none; color:#fff; font-size:14px; }
+    .top-icons{ display:flex; gap:10px; margin-left:8px; }
+    .icon{
+      width:30px;height:30px;border-radius:50%;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      color:#fff; display:grid; place-items:center;
+      font-size:13px; cursor:pointer; user-select:none;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      gap:16px;
+      padding:14px;
+      height: calc(100vh - 56px);
+    }
+
+    .nav{
+      background:linear-gradient(180deg, var(--nav-bg), var(--nav-bg-2));
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px 12px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .nav-top{ display:flex; align-items:center; gap:10px; padding:6px 6px 10px 6px; }
+    .filterbox{
+      flex:1; display:flex; align-items:center; gap:10px;
+      padding:8px 10px; border-radius:10px;
+      background:var(--filter-bg);
+      border:2px solid var(--filter-border);
+      color:#111827;
+      box-shadow: 0 4px 10px rgba(0,0,0,.12);
+    }
+    .filterbox input{ flex:1; border:0; outline:none; font-size:14px; background:transparent; }
+    .nav-mini{
+      width:30px;height:30px;border-radius:8px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.12);
+      display:grid;place-items:center;
+      color:var(--nav-text);
+      cursor:pointer; user-select:none;
+    }
+    .nav-scroll{ overflow:auto; padding:6px; margin-top:6px; }
+
+    .nav-item{
+      color:var(--nav-text);
+      display:flex; align-items:center; gap:10px;
+      padding:10px 10px; border-radius:10px;
+      cursor:pointer; user-select:none;
+    }
+    .nav-item:hover{ background:rgba(255,255,255,.06); }
+    .nav-item .chev{
+      width:8px;height:8px;
+      border-right:2px solid var(--nav-muted);
+      border-bottom:2px solid var(--nav-muted);
+      transform:rotate(-45deg);
+    }
+    .nav-item .label{ font-size:16px; font-weight:500; }
+
+    .app-group{ margin-top:10px; }
+    .app-header{
+      margin-top:12px;
+      padding:10px 10px;
+      border-radius:10px;
+      background:rgba(0,0,0,.10);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--nav-text);
+      display:flex; align-items:center; gap:10px;
+      cursor:pointer; user-select:none;
+    }
+    .app-header .chev{
+      width:8px;height:8px;
+      border-right:2px solid var(--nav-muted);
+      border-bottom:2px solid var(--nav-muted);
+      transform:rotate(45deg);
+    }
+    .app-header .title{ font-weight:700; font-size:16px; }
+
+    .module{
+      margin-top:6px;
+      margin-left:20px;
+      padding:10px 10px;
+      border-radius:10px;
+      display:flex; align-items:center; gap:10px;
+      color:var(--nav-text);
+      cursor:pointer;
+    }
+    .module:hover{ background:rgba(255,255,255,.06); }
+    .module.active{
+      background:rgba(90,162,255,.18);
+      outline:1px solid rgba(90,162,255,.35);
+    }
+    .module .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 0 4px rgba(90,162,255,.12);
+    }
+    .module .name{ font-size:15px; font-weight:600; }
+
+    .content{ display:flex; flex-direction:column; gap:12px; overflow:hidden; }
+    .content-card{
+      background:var(--content-bg);
+      border-radius:12px;
+      border:1px solid var(--border);
+      overflow:hidden;
+      box-shadow: 0 8px 20px rgba(17,24,39,.08);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .content-toolbar{
+      height:52px;
+      display:flex; align-items:center;
+      padding:0 14px;
+      border-bottom:1px solid var(--border);
+      background:#fff;
+      gap:10px;
+    }
+    .content-toolbar .title{
+      font-weight:800;
+      font-size:15px;
+      color:#111827;
+    }
+    .toolbar-spacer{ flex:1; }
+    .toolbtn{
+      width:34px;height:34px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#fff;
+      display:grid;place-items:center;
+      cursor:pointer; user-select:none;
+      color:#111827;
+    }
+
+    .table-wrap{ overflow:auto; height:100%; }
+    table{ width:100%; border-collapse:collapse; min-width:1100px; }
+    thead th{
+      background:var(--table-head);
+      color:#111827;
+      font-size:12px;
+      text-align:left;
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      font-weight:700;
+      white-space:nowrap;
+    }
+    tbody td{
+      background:var(--table-row);
+      font-size:13px;
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      color:#111827;
+      white-space:nowrap;
+    }
+    tbody tr:hover td{ background:#f9fbff; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">LA</div>
+      <div>LAHD</div>
+    </div>
+
+    <div class="app-pill">
+      <span>ServiceNow Development</span>
+      <span class="star">★</span>
+    </div>
+
+    <div class="top-spacer"></div>
+
+    <div class="top-search" role="search">
+      <span style="opacity:.9;">🔍</span>
+      <input placeholder="Search" />
+      <span style="opacity:.8;">▾</span>
+    </div>
+
+    <div class="top-icons">
+      <div class="icon">⠿</div>
+      <div class="icon">💬</div>
+      <div class="icon">?</div>
+      <div class="icon">🔔</div>
+      <div class="icon">TN</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="nav">
+      <div class="nav-top">
+        <div class="filterbox">
+          <span style="color:#111827;">⏷</span>
+          <input id="navFilter" placeholder="Filter" />
+        </div>
+        <div class="nav-mini">⟳</div>
+        <div class="nav-mini">📌</div>
+      </div>
+
+      <div class="nav-scroll">
+        <div class="nav-item"><div class="chev"></div><div class="label">Self-Service</div></div>
+        <div class="nav-item"><div class="chev"></div><div class="label">AAHR</div></div>
+        <div class="nav-item"><div class="chev"></div><div class="label">Access Analyzer</div></div>
+
+        <div class="app-group">
+          <div class="app-header">
+            <div class="chev"></div>
+            <div class="title">Land Use</div>
+          </div>
+
+          <div class="module active" data-module="Land Use Projects">
+            <div class="dot"></div><div class="name">Land Use Projects</div>
+          </div>
+
+          <div class="module" data-module="Land Use RUD Records">
+            <div class="dot"></div><div class="name">Land Use RUD Records</div>
+          </div>
+
+          <div class="module" data-module="Land Use Covenant Records">
+            <div class="dot"></div><div class="name">Land Use Covenant Records</div>
+          </div>
+
+          <div class="module" data-module="Land Use Occupancy Monitoring">
+            <div class="dot"></div><div class="name">Land Use Occupancy Monitoring</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="content-card">
+        <div class="content-toolbar">
+          <div class="title" id="pageTitle">Land Use Projects</div>
+          <div class="toolbar-spacer"></div>
+          <div class="toolbtn">＋</div>
+          <div class="toolbtn">⚙</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const columns = {
+      "Land Use Projects": [
+        { key:"project_number", label:"Project Number" },
+		{ key:"APN", label:"APN" },
+        { key:"project_name", label:"Project Name" },
+        { key:"property_address", label:"Property Address" },
+        { key:"num_units", label:"Num of Units" },
+        { key:"project_status", label:"Project Status" }
+      ],
+      "Land Use Occupancy Monitoring": [
+        { key:"proj_no", label:"Proj No" },
+		{ key:"APN", label:"APN" },
+        { key:"proj_name", label:"Proj Name" },
+        { key:"proj_address", label:"Proj Address" },
+        { key:"cov_reg_agrmt_no", label:"Cov/Reg Agrmt No" },
+        { key:"compliance_status", label:"Compliance Status" },
+        { key:"contract_number", label:"Contract Number" },
+        { key:"hsg_serv_prog_type", label:"Hsg Serv Prog & Cov/Reg Agrmt Type" }
+      ],
+	  "Land Use Covenant Records": [
+        { key:"desc2", label:"COV Record" },
+        { key:"state2", label:"Project Number" },
+		{ key:"APN", label:"APN" },
+        { key:"group2", label:"Project Name" },
+        { key:"assignee2", label:"Assigned to" },
+        { key:"updated2", label:"Updated" },
+		{ key:"Status2", label:"Status" }
+      ],
+	  
+      "default": [
+        { key:"desc", label:"RUD Record" },
+		
+        { key:"state", label:"Project Number" },
+		{ key:"APN", label:"APN" },
+        { key:"group", label:"Project Name" },
+        { key:"assignee", label:"Assigned to" },
+        { key:"updated", label:"Updated" },
+		{ key:"Status", label:"Status" }
+      ]
+    };
+
+    const data = {
+      "Land Use Projects": [
+        { project_number:"19-130822", APN: "5547016906", project_name:"Hollywood Arts Collective", property_address:"6522 W HOLLYWOOD BLVD HOLLYWOOD, CA 90028", num_units: 24, project_status:"Open" }, { project_number:"26-133536", APN: "4412019020", project_name:"521 N. Lombard Ave. - RPO (WF)", property_address:"521 N LOMBARD AVE CA 90272", num_units: 0, project_status:"Open" }, 
+      { project_number:"26-133350", APN: "2242010023", project_name:"6243 N. Halbrent Ave. - (ED 1)", property_address:"6243 N HALBRENT AVE VAN NUYS, CA 91411", num_units: 41, project_status:"Open" }, { project_number:"26-133451", APN: "2241003001", project_name:"14600 W. Victory Blvd.", property_address:"14600 W VICTORY BLVD VAN NUYS, CA 91411", num_units: 44, project_status:"Open" }, { project_number:"26-133448", APN: "2241003020", project_name:"6361 N. Vesper Ave.", property_address:"6361 N VESPER AVE 1-36 VAN NUYS, CA 91411", num_units: 36, project_status:"Open" }, { project_number:"26-133534", APN: "5424002042", project_name:"2227 W. Scott Ave. (ED 1)", property_address:"2227 W SCOTT AVE CA 90026", num_units: 38, project_status:"Open" }],
+      "Land Use RUD Records": [
+        { desc:"RUD-822204", state:"19-130822", APN: "5547016906", group:"Hollywood Arts Collective", assignee:" Nicholas Kawazoe", updated:"Today",Status: "Received" }, { desc:"RUD-822204", state:"26-133536",APN: "4412019020", group:"521 N. Lombard Ave. - RPO (WF)", assignee:" James McCarthy", updated:"03-04-2026 01:37:11 PM" ,Status: "Initial Review"},{ desc:"RUD-822204", state:"26-133350",APN: "2242010023", group:"6243 N. Halbrent Ave. - (ED 1)", assignee:" Nicholas Kawazoe", updated:"02-11-2026 10:25:28 AM" ,Status: "Revision Needed" }
+      ],
+      "Land Use Covenant Records": [
+        { desc2:"COV-0000201", state2:"19-130822", APN: "5547016906", group2:"Hollywood Arts Collective", assignee2:"Nicholas Kawazoe", updated2:"Today", Status2:"Revision Needed" }, { desc2:"COV-0000202", state2:"26-133536", APN: "4412019020", group2:"521 N. Lombard Ave. - RPO (WF)", assignee2:"Nicholas Kawazoe", updated2:"Today", Status2:"Initial Review" }, { desc2:"COV-0000203", state2:"26-133350", APN: "2242010023", group2:"6243 N. Halbrent Ave. - (ED 1)", assignee2:"Nicholas Kawazoe", updated2:"03-06-2026 10:27:01 AM", Status2:"Revision Needed" }
+      ],
+      "Land Use Occupancy Monitoring": [
+        {
+          proj_no:"18-125463",
+		  APN: "5547016906",
+          proj_name:"Hollywood Arts Collective",
+          proj_address:"1630 N SCHRADER BLVD HOLLYWOOD, CA 90028",
+          cov_reg_agrmt_no:"C-136946",
+          compliance_status:"Compliant",
+          contract_number:"C137458",
+          hsg_serv_prog_type:"Land Use / Covenant Rental Sch. 7"
+        }, {
+          proj_no:"99-118236",
+		  APN: "5154029029",
+          proj_name:"507 - 511 S. WESTLAKE AVE. - 507-511 S0. Westlake",
+          proj_address:"507 S WESTLAKE AVE Los Angeles, CA 90057",
+          cov_reg_agrmt_no:"C-97703",
+          compliance_status:"Compliant",
+          contract_number:"-",
+          hsg_serv_prog_type:"Land Use / Covenant Rental Sch 3"
+        }, {
+          proj_no:"990356",
+		  APN: "5152003001",
+          proj_name:"EADS APTS.",
+          proj_address:"421 S BIXEL ST Los Angeles, CA 90017",
+          cov_reg_agrmt_no:"C-108298",
+          compliance_status:"Non-Compliant",
+          contract_number:"C-103958",
+          hsg_serv_prog_type:"Land Use / Covenant Rental Sch 1"
+        }
+      ]
+    };
+
+    const thead = document.getElementById("thead");
+    const tbody = document.getElementById("tbody");
+    const pageTitle = document.getElementById("pageTitle");
+
+    function esc(v){
+      return String(v ?? "—")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function render(moduleName){
+      pageTitle.textContent = moduleName;
+      const cols = columns[moduleName] || columns.default;
+      const rows = data[moduleName] || [];
+
+      thead.innerHTML = `<tr>${cols.map(c => `<th>${esc(c.label)}</th>`).join("")}</tr>`;
+      tbody.innerHTML = rows.length
+        ? rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c.key])}</td>`).join("")}</tr>`).join("")
+        : `<tr><td colspan="${cols.length}" style="padding:12px;color:#6b7280;">No records to display.</td></tr>`;
+    }
+
+    document.querySelectorAll(".module").forEach(m=>{
+      m.addEventListener("click", ()=>{
+        document.querySelectorAll(".module").forEach(x=>x.classList.remove("active"));
+        m.classList.add("active");
+        render(m.dataset.module);
+      });
+    });
+
+    document.getElementById("navFilter").addEventListener("input", (e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll(".module").forEach(mod=>{
+        const name = (mod.dataset.module || "").toLowerCase();
+        mod.style.display = (!q || name.includes(q)) ? "flex" : "none";
+      });
+    });
+
+    render("Land Use Projects");
+  </script>
+</body>
+</html>

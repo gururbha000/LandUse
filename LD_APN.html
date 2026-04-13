@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>LAHD – Replacement Unit Determination</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+    :root{
+      --lahd-blue:#3f6177;
+      --lahd-bg:#f4f6f8;
+      --border:#d6d6d6;
+      --text-dark:#1f2f3a;
+      --footer-height:72px;
+      --sidebar-width:280px;
+    }
+
+    *{ box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+
+    body{ margin:0; background:var(--lahd-bg); }
+
+    .header{
+      height:72px;
+      background:var(--lahd-blue);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+    }
+    .header-left{ display:flex; align-items:center; gap:18px; }
+    .header-left img{ height:46px; background:#fff; padding:4px 6px; border-radius:4px; }
+    .header-title{ font-size:20px; font-weight:bold; }
+    .header-right{ display:flex; align-items:center; gap:16px; font-size:14px; }
+    .header-right select{ padding:4px; }
+
+    .layout{
+      display:flex;
+      min-height:calc(100vh - 72px);
+    }
+
+    .sidebar{
+      width:var(--sidebar-width);
+      background:#fff;
+      border-right:1px solid var(--border);
+      padding:20px;
+    }
+    .sidebar .btn{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px;
+      border-radius:6px;
+      font-weight:bold;
+      text-align:center;
+      margin-bottom:20px;
+    }
+    .sidebar p{ font-size:13px; color:#333; margin-bottom:24px; }
+
+    .content{
+      flex:1;
+      padding:40px;
+      overflow-y:auto;
+      padding-bottom:calc(40px + var(--footer-height));
+    }
+
+    .page-title{
+      text-align:center;
+      font-size:34px;
+      margin-bottom:30px;
+      color:var(--text-dark);
+    }
+
+    .section-header{
+      background:var(--lahd-blue);
+      color:#fff;
+      padding:14px 20px;
+      font-size:18px;
+      border-radius:6px;
+      margin-top:40px;
+    }
+    .section-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:24px;
+      margin-top:20px;
+    }
+    .help-box{
+      background:#f0f0f0;
+      padding:14px;
+      border-radius:6px;
+      font-size:14px;
+      margin-bottom:0;
+    }
+
+    .grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:20px 30px; }
+    .field{ display:flex; flex-direction:column; }
+    .field-stack{ display:flex; flex-direction:column; gap:20px; }
+    label{ font-weight:bold; font-size:14px; margin-bottom:6px; }
+    .required{ color:#c00000; }
+    input, select, textarea{
+      padding:10px;
+      font-size:14px;
+      border:1px solid #bbb;
+      border-radius:4px;
+      background:#fff;
+    }
+    textarea{ min-height:90px; }
+    .full{ grid-column:1 / -1; }
+    .note{ font-size:12px; color:#555; margin-top:6px; }
+
+    .attachment-list{ list-style:none; padding:0; margin:0; }
+    .attachment-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top:12px;
+      padding:8px;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:4px;
+    }
+    .attach-label{ flex:1; font-size:14px; font-weight:bold; }
+    .icon-btn{ width:22px; height:22px; cursor:pointer; fill:var(--lahd-blue); transition: opacity .15s ease; }
+    .icon-btn:hover{ opacity:0.75; }
+    .filename{ font-size:14px; color:#333; flex:1; margin-left:8px; }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:24px;
+      background:#fff;
+      border-radius:6px;
+      overflow:hidden;
+    }
+    thead{ background:var(--lahd-blue); color:#fff; }
+    th, td{
+      padding:12px 10px;
+      font-size:13px;
+      border-bottom:1px solid #ddd;
+      text-align:left;
+    }
+    th{ font-weight:bold; }
+    tbody tr:nth-child(even){ background:#f9f9f9; }
+    tbody tr:hover{ background:#eef4f7; }
+
+    .footer-actions{
+      position:fixed;
+      bottom:0;
+      left:var(--sidebar-width);
+      right:0;
+      height:var(--footer-height);
+      background:#fff;
+      border-top:1px solid var(--border);
+      padding:16px 40px;
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      z-index:9999;
+      align-items:center;
+    }
+
+    .footer-actions button{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+    }
+    .btn-secondary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:#e5e7eb;
+      color:#333;
+      border:1px solid #ccc;
+    }
+    .btn-primary{
+      padding:10px 22px;
+      border-radius:6px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      background:var(--lahd-blue);
+      color:#fff;
+      border:none;
+    }
+
+    .browser-card{
+      margin-top: 18px;
+      background: #ffffff;
+      border: 2px solid #cfcfcf;
+      border-radius: 14px;
+      padding: 22px 18px 18px;
+    }
+    .browser-grid{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px 14px;
+      align-items: start;
+    }
+    .browser-item{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+    .browser-icon{
+      width: 25px !important;
+      height: 25px !important;
+      max-width: 42px !important;
+      max-height: 42px !important;
+      object-fit: contain;
+      display: block;
+    }
+    .browser-name{
+      line-height: 1.05;
+      color: #2f3542;
+      font-weight: 500;
+      font-size: 10px;
+    }
+    .browser-name span{ display: block; }
+    @media (max-width: 520px){
+      .browser-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .existing-property{
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .existing-property-title{
+      font-weight: 800;
+      margin: 0 0 12px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    .existing-property-title span{
+      font-weight: 600;
+      text-transform: none;
+    }
+    .existing-prop-input{
+      background: #eef3ff;
+      border-color: #d3dcf0;
+      height: 36px;
+    }
+    .existing-prop-inline{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .existing-prop-inline > *{
+      flex: 1 1 140px;
+    }
+    .existing-prop-date{
+      max-width: 220px;
+    }
+    @media (max-width: 840px){
+      .existing-prop-date{
+        max-width: none;
+      }
+    }
+
+    /* ===== APN Search Panel (smaller version) ===== */
+    .apn-search-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+      box-shadow:none;
+    }
+
+    .apn-search-header{
+      background:var(--lahd-blue);
+      color:#fff;
+      font-size:18px;
+      font-weight:700;
+      padding:14px 18px;
+    }
+
+    .apn-search-body{
+      padding:18px;
+    }
+
+    .apn-search-body p{
+      font-size:14px;
+      line-height:1.5;
+      color:#555;
+      margin:0 0 18px 0;
+    }
+
+    .apn-search-options{
+      display:flex;
+      gap:20px;
+      align-items:center;
+      margin-bottom:16px;
+      font-size:14px;
+      color:#555;
+      flex-wrap:wrap;
+    }
+
+    .apn-search-options label{
+      font-weight:500;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:0;
+    }
+
+    .apn-search-options input[type="radio"]{
+      width:16px;
+      height:16px;
+      accent-color:#0b79d0;
+    }
+
+    .apn-search-row{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .apn-input-wrap{
+      flex:1;
+      min-width:260px;
+      display:flex;
+      align-items:center;
+      border:1px solid #bbb;
+      border-radius:4px;
+      overflow:hidden;
+      background:#fff;
+      height:42px;
+    }
+
+    .apn-search-icon{
+      width:42px;
+      min-width:42px;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-right:1px solid #bbb;
+      color:#555;
+      font-size:14px;
+    }
+
+    .apn-input-wrap input{
+      border:none;
+      outline:none;
+      font-size:14px;
+      padding:0 12px;
+      width:100%;
+      height:100%;
+      background:#fff;
+    }
+
+    .apn-search-btn{
+      min-width:120px;
+      height:42px;
+      background:var(--lahd-blue);
+      color:#fff;
+      border:none;
+      border-radius:4px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      padding:0 16px;
+    }
+
+    .apn-search-btn:hover{
+      opacity:0.95;
+    }
+
+    .apn-result-card{
+      display:flex;
+      align-items:center;
+      gap:18px;
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:16px 18px;
+      box-shadow:none;
+    }
+
+    .apn-result-left{
+      min-width:140px;
+    }
+
+    .apn-result-label{
+      font-size:14px;
+      font-weight:700;
+      color:#4f4f4f;
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+
+    .apn-result-value{
+      font-size:20px;
+      color:#4f4f4f;
+      font-weight:600;
+    }
+
+    .apn-result-divider{
+      width:1px;
+      align-self:stretch;
+      background:#d6d6d6;
+    }
+
+    .apn-result-right{
+      flex:1;
+    }
+
+    .apn-result-address{
+      font-size:18px;
+      font-weight:700;
+      color:#4f4f4f;
+      line-height:1.2;
+      text-transform:uppercase;
+    }
+
+    .apn-result-city{
+      font-size:14px;
+      color:#555;
+      margin-top:6px;
+      text-transform:uppercase;
+    }
+
+    @media (max-width: 900px){
+      .apn-search-row{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .apn-input-wrap{
+        min-width:100%;
+      }
+
+      .apn-search-btn{
+        width:100%;
+        min-width:100%;
+      }
+
+      .apn-result-card{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .apn-result-divider{
+        width:100%;
+        height:1px;
+      }
+    }
+
+    .same-as-row{ margin-bottom: -6px; }
+    .same-as{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:13px; color:var(--text-dark); }
+    .same-as input[type="checkbox"]{ width:16px; height:16px; accent-color: var(--lahd-blue); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <img alt="Los Angeles Housing Department Logo" src="LA_HCID_Logo_Web_1.png"/>
+    <div class="header-title">Replacement Unit Determination</div>
+  </div>
+  <div class="header-right">
+    Thanh Ngo
+    <select>
+      <option>Select Language</option>
+    </select>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="btn">Replacement Unit Determination</div>
+    <p>
+      This application is used to determine replacement housing requirements
+      pursuant to the Resident Protections Ordinance (LAMC 16.60).<br/><br/>
+      To receive a Replacement Unit Determination, please complete the following and attach
+      all required documentation. Please attach an explanation for any information you are
+      unable to provide. Please put project address at the top of all attachment pages submitted.
+    </p>
+
+    <div aria-label="Recommended browsers" class="browser-card">
+      Recommended Browser <br/><br/>
+      <div class="browser-grid">
+        <div class="browser-item">
+          <img alt="Google Chrome" class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg"/>
+          <div class="browser-name"><span>Google</span><span>Chrome</span></div>
+        </div>
+        <div class="browser-item">
+          <img alt="Microsoft Edge" class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/9/98/Microsoft_Edge_logo_%282019%29.svg"/>
+          <div class="browser-name"><span>Microsoft</span><span>Edge</span></div>
+        </div>
+        <div class="browser-item">
+          <img alt="Mozilla Firefox" class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg"/>
+          <div class="browser-name"><span>Mozilla</span><span>Firefox</span></div>
+        </div>
+        <div class="browser-item">
+          <img alt="Apple Safari" class="browser-icon" src="https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.svg"/>
+          <div class="browser-name"><span>Apple</span><span>Safari</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="page-title">Replacement Unit Determination Submission</div>
+
+    <div class="section-header">Information Bulletin</div>
+    <div class="section-card">
+      <div class="help-box">
+        Effective on February 11, 2025, the Resident Protections Ordinance (RPO) prohibits the approval of any proposed development project (“Project”) on a site (“Property”) that will require demolition of existing residential dwelling units, or occupied or vacant Protected Units, unless the Project replaces those units as specified below. The provisions of the RPO apply to all development projects approved by the City on or after February 11, 2025 that involve the demolition or removal of a dwelling unit, with exceptions for certain industrial projects. The RPO states that the obligation to replace Protected Units does not apply to any units demolished prior to January 1, 2020.
+        <br><br>
+        Projects subject to the RPO that do not qualify to utilize the No Net Loss Declaration must complete an application for an RPO Replacement Unit Determination (RUD) with LAHD. Projects that have one of the following items filed prior to February 11, 2025, will be allowed to submit and obtain a Housing Crisis Act RUD instead of an RPO RUD.
+        <br/><br/>
+        * A Department of Building and Safety application filed and fees paid per 13B.10 of Chapter 1A of the LAMC, or<br/><br/>
+        * A Department of City Planning (DCP) preliminary application filed per the state Housing Crisis Act (HCA) (form CP13-4062), or<br/><br/>
+        * A DCP entitlement application filed for vesting zone changes, general plan amendments and subdivisions.<br/><br/>
+        *DCP has put together a Fact Sheet for Replacement Unit Requirements and Occupant Protections under the HCA and RPO<br/><br/>
+        **A RPO RUD is required for all projects utilizing the Citywide Housing Incentive Program (CHIP) Ordinance. This includes projects that have previously received a Housing Crisis Act RUD but have changed to a CHIP project. If a new RUD is required, the applicable fees will be applied.
+        <br/><br/>
+        <em>Guidelines and help documentation placeholder.</em>
+      </div>
+    </div>
+
+    <div class="section-header">Property Owner</div>
+    <div class="section-card">
+      <div class="grid">
+        <div class="field"><label>Name</label><input id="po_name"/></div>
+        <div class="field"><label>Contact Person</label><input id="po_contact_person"/></div>
+        <div class="field"><label>Address</label><input id="po_address"/></div>
+        <div class="field"><label>Phone</label><input id="po_phone"/></div>
+        <div class="field full"><label>Email</label><input id="po_email"/></div>
+      </div>
+    </div>
+
+    <div class="section-header">Owner Contact</div>
+    <div class="section-card">
+      <div class="grid">
+        <div class="field full same-as-row"><label class="same-as"><input id="oc_same_as_po" type="checkbox"/> Same as Property Owner</label></div>
+        <div class="field"><label>Name</label><input id="oc_title"/></div>
+        <div class="field"><label>Contact Person</label><input id="oc_contact_person"/></div>
+        <div class="field"><label>Address</label><input id="oc_address"/></div>
+        <div class="field"><label>Phone</label><input id="oc_phone"/></div>
+        <div class="field full"><label>Email</label><input id="oc_email"/></div>
+      </div>
+    </div>
+
+    <div class="section-header">Applicant (If different from Owner)</div>
+    <div class="section-card">
+      <div class="grid">
+        <div class="field full same-as-row"><label class="same-as"><input id="ap_same_as_po" type="checkbox"/> Same as Property Owner</label></div>
+        <div class="field"><label>Name</label><input id="ap_name"/></div>
+        <div class="field"><label>Contact Person</label><input id="ap_contact_person"/></div>
+        <div class="field"><label>Address</label><input id="ap_address"/></div>
+        <div class="field"><label>Phone</label><input id="ap_phone"/></div>
+        <div class="field full"><label>Email</label><input id="ap_email"/></div>
+      </div>
+    </div>
+
+    <div class="section-header">Project Information</div>
+    <div class="section-card">
+      <div class="grid">
+        <div class="field">
+          <label>Project Type</label>
+          <div class="note">* Project Type (Hold CTRL to Choose Multiple Types).</div>
+          <select multiple size="6">
+            <option value="Density Bonus">Density Bonus</option>
+            <option value="TOC">TOC</option>
+            <option value="PSH Ordinance">PSH Ordinance</option>
+            <option value="JJJ">JJJ</option>
+            <option value="Zoning Variance">Zoning Variance</option>
+            <option value="Recs and Parks Exemption">Recs and Parks Exemption</option>
+            <option value="RSO Exemption">RSO Exemption</option>
+            <option value="Specific Plan Adjustment">Specific Plan Adjustment</option>
+            <option value="SB 35">SB 35</option>
+            <option value="AB 2162">AB 2162</option>
+            <option value="Senior Housing Project">Senior Housing Project</option>
+            <option value="Mello">Mello</option>
+            <option value="Residential Hotel">Residential Hotel</option>
+            <option value="CHIP">CHIP</option>
+            <option value="SB 684/SB 1123">SB 684/SB 1123</option>
+          </select>
+        </div>
+
+        <div class="field-stack">
+          <div class="field">
+            <label>Proposed Project Type</label>
+            <select>
+              <option value="">-- Select --</option>
+              <option>Rental Unit</option>
+              <option>Unit For Sale</option>
+              <option>Small Lot Subdivision</option>
+              <option>100% Affordable Housing Project</option>
+              <option>ED 1 100% Affordable Housing Project</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Entitlements with DCP?</label>
+            <select><option>No</option><option>Yes</option></select>
+          </div>
+          <div class="field">
+            <label>Subject to URA?</label>
+            <select><option>No</option><option>Yes</option></select>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label><input type="checkbox"/> Palisades Fire Rebuild</label>
+          <div class="note">* Permitting fees for rebuildings of SFDs and duplexes are suspended per EO7.</div>
+        </div>
+
+        <div class="field full">
+          <label>Description of Proposed Construction / Conversion</label>
+          <textarea></textarea>
+        </div>
+
+        <div class="field">
+          <label>Not subject to the RPO due to vesting prior to February 11, 2025*</label>
+          <div class="note">* Project may still be subject to the Housing Crisis Act of 2019.<br/><br/>Choose 1 of the following:</div>
+          <select>
+            <option>N/A</option>
+            <option>A Department of Building and Safety application was filed and fees paid per 13B.10 of Chapter 1A of the LAMC</option>
+            <option>A Department of City Planning preliminary application was filed, fees paid and complete per the Housing Crisis Act (HCA) (form CP13-4062)</option>
+            <option>A Department of City Planning entitlement application was filed for vesting zone changes, general plan amendments and subdivisions</option>
+          </select>
+        </div>
+
+        <div class="field-stack">
+          <div class="field">
+            <label>LADBS Building Permit Number(s)</label>
+            <input/>
+          </div>
+          <div class="field">
+            <label>LADBS Demolition Permit Number(s)</label>
+            <input/>
+          </div>
+          <div class="field">
+            <label>Department of City Planning Case Number(s)</label>
+            <input/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">Existing Buildings</div>
+    <div class="section-card">
+      <div class="existing-property">
+        <div class="existing-property-title">
+          EXISTING PROPERTY
+          <span>(include ALL existing buildings within the last 5 years in complex - attach additional pages if needed)</span>
+        </div>
+
+        <div class="grid existing-prop-grid">
+          <div class="field full">
+            <div class="apn-search-card">
+              <div class="apn-search-header">Search by Address or APN</div>
+
+              <div class="apn-search-body">
+                <p>
+                  To search by property address, enter the house number and street name, then click Search.
+                  <br><br>
+                  Or, enter the Assessor Parcel Number (APN) and click Search.
+                </p>
+
+                <div class="apn-search-options">
+                  <label><input name="apnSearchType" type="radio" value="address"/> Address</label>
+                  <label><input checked name="apnSearchType" type="radio" value="apn"/> APN</label>
+                </div>
+
+                <div class="apn-search-row">
+                  <div class="apn-input-wrap">
+                    <span class="apn-search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input id="ex_apn" placeholder="Enter APN or Address" type="text" value="4236021016"/>
+                  </div>
+                  <button class="apn-search-btn" onclick="searchApn()" type="button">Search</button>
+                </div>
+
+                <div class="apn-result-card" id="apnResultCard">
+                  <div class="apn-result-left">
+                    <div class="apn-result-label">APN</div>
+                    <div class="apn-result-value" id="apnResultNumber">4236021016</div>
+                  </div>
+                  <div class="apn-result-divider"></div>
+                  <div class="apn-result-right">
+                    <div class="apn-result-address" id="apnResultAddress1">3984 MOORE ST</div>
+                    <div class="apn-result-city" id="apnResultAddress2">LOS ANGELES, CA 90066</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="ex_lot">Lot Number(s):</label>
+            <input class="existing-prop-input" id="ex_lot" type="text"/>
+          </div>
+
+          <div class="field">
+            <label for="ex_coo">Does this property have a Certificate of Occupancy issued on or before October 1, 1978?</label>
+            <select class="existing-prop-input" id="ex_coo">
+              <option value="">Select</option>
+              <option>Yes</option>
+              <option>No</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="ex_lot_tie">Does this property have a recorded lot tie?</label>
+            <select class="existing-prop-input" id="ex_lot_tie">
+              <option value="">Select</option>
+              <option>Yes</option>
+              <option>No</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="ex_withdrawn">Are there any residential dwelling units withdrawn from rent or lease within the last 10 years? If yes, provide the date:</label>
+            <div class="existing-prop-inline">
+              <select class="existing-prop-input" id="ex_withdrawn">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+              <input aria-label="Withdrawal date (if yes)" class="existing-prop-input existing-prop-date" id="ex_withdrawn_date" type="date"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>Building Address / Unit #s</label>
+          <input id="b_address"/>
+        </div>
+        <div class="field">
+          <label>Building Type</label>
+          <select id="b_type">
+            <option value="">Select One</option>
+            <option>Single Family</option>
+            <option>Duplex</option>
+            <option>Triplex</option>
+            <option>Apartment</option>
+          </select>
+        </div>
+        <div class="field">
+          <label># Bedrooms per Unit</label>
+          <input id="b_bedrooms" type="number"/>
+        </div>
+        <div class="field">
+          <label># Units in Building</label>
+          <input id="b_units" type="number"/>
+        </div>
+        <div class="field full">
+          <button class="btn-primary" onclick="addBuilding()" type="button">Add Building</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Address / Units</th>
+            <th>Type</th>
+            <th>Bedrooms</th>
+            <th># Units</th>
+          </tr>
+        </thead>
+        <tbody id="buildingsTable"></tbody>
+      </table>
+
+      <p style="text-align:right; font-weight:bold; margin-top:12px;">
+        Total Units in Complex: <span id="totalUnits">0</span>
+      </p>
+    </div>
+
+    <div class="field full"><br/>
+      <label>Description of existing units, buildings or APN within the last five years:</label>
+      <textarea></textarea>
+    </div>
+
+    <h4>Expected dates for future project</h4>
+    <div class="grid">
+      <div class="field"><label>Expected Eviction Date(s) for current tenants(s)</label><input type="date"/></div>
+      <div class="field"><label>Expected date(s) to apply for new building permit(s)</label><input type="date"/></div>
+      <div class="field"><label>Expected date of first LADBS inspection on the new construction permit</label><input type="date"/></div>
+      <div class="field"><label>Expected date to receive Certificate of Occupancy</label><input type="date"/></div>
+    </div>
+
+    <div class="section-header">Required Documents — Upload Files</div>
+    <ul class="attachment-list" id="attachmentList"></ul>
+
+    <div class="section-header">Tenant Information Table </div>
+    <div class="note">
+      *For single family dwellings (SFDs), information regarding the occupants of SFDs will also need to be provided.
+      <br/><br/>**Additional pages can be added, if necessary.
+    </div>
+
+    <div class="section-card">
+      <div class="grid">
+        <div class="field"><label>Project Address</label><input/></div>
+        <div class="field"><label>Owner Name</label><input/></div>
+        <div class="field"><label>Phone Number</label><input/></div>
+        <div class="field"><label>Email Address</label><input/></div>
+      </div>
+
+      <div class="section-card" style="margin-top:20px;">
+        <div class="grid">
+          <div class="field"><label>Name(s) of Occupant(s)</label><input id="t_name" type="text"/></div>
+          <div class="field"><label>Unit Number</label><input id="t_unit" type="text"/></div>
+          <div class="field"><label>Rent Amount</label><input id="t_rent" step="0.01" type="number"/></div>
+          <div class="field"><label>Occupancy Date</label><input id="t_date" type="date"/></div>
+          <div class="field"><label>Contact Number</label><input id="t_contact" type="text"/></div>
+          <div class="field"><label>Contact Email Address</label><input id="t_email" type="email"/></div>
+          <div class="field"><label># of Bedrooms</label><input id="t_bedrooms" min="0" type="number"/></div>
+          <div class="field"><label># of Bathrooms</label><input id="t_bathrooms" min="0" type="number"/></div>
+        </div>
+        <br>
+        <button class="btn-primary" onclick="addTenant()" type="button">Add Record</button>
+        </br>
+      </div>
+
+      <table id="occupantsTable">
+        <thead>
+          <tr>
+            <th>Name of Occupants</th>
+            <th>Unit Number</th>
+            <th>Rent Amount</th>
+            <th>Occupancy Date</th>
+            <th>Contact Number</th>
+            <th>Email Address</th>
+            <th># of Bedrooms</th>
+            <th># of Bathrooms</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div aria-label="Actions" class="footer-actions" role="contentinfo">
+  <button class="btn-secondary" onclick="saveDraft()" type="button">Save As Draft</button>
+  <button class="btn-primary" onclick="submitForm()" type="button">Submit</button>
+</div>
+
+<script>
+    let totalUnits = 0;
+
+    function addBuilding(){
+      const addressEl = document.getElementById("b_address");
+      const typeEl = document.getElementById("b_type");
+      const bedroomsEl = document.getElementById("b_bedrooms");
+      const unitsEl = document.getElementById("b_units");
+
+      const address = addressEl.value.trim();
+      const type = typeEl.value.trim();
+      const bedrooms = bedroomsEl.value.trim();
+      const unitsStr = unitsEl.value.trim();
+
+      if (!address || !type || !unitsStr){
+        alert("Please complete all building fields.");
+        return;
+      }
+
+      const units = parseInt(unitsStr, 10);
+      if (Number.isNaN(units) || units < 0){
+        alert("Units must be a valid number.");
+        return;
+      }
+
+      const tbody = document.getElementById("buildingsTable");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${escapeHtml(address)}</td>
+        <td>${escapeHtml(type)}</td>
+        <td>${escapeHtml(bedrooms)}</td>
+        <td style="text-align:center;">${units}</td>
+      `;
+      tbody.appendChild(row);
+
+      totalUnits += units;
+      document.getElementById("totalUnits").textContent = totalUnits;
+
+      addressEl.value = "";
+      typeEl.value = "";
+      bedroomsEl.value = "";
+      unitsEl.value = "";
+    }
+
+    const docs = [
+      "Applicant's Affidavit + Owner's Acknowledgment (with letter signed by owner of record and notarized)",
+      "Letter of Application<br>(List units within the last 5 years, including unit #, unit square footage, and number of bedrooms)",
+      "Tenant Information Table (Mandatory for Occupied Units)<br>• If unit is rented, list the occupant's name, unit number, rent amount, occupancy dates, contact information, and the bedroom type/count of the unit they occupied.<br>• If unit is not rented, explain its current use and give the date the last renter vacated",
+      "Tenant Income Certification Form",
+      "Owner Occupancy Proof:<br>• If the Homeowner Exemption was taken, provide copies of Property Tax documents for each year of the 5-year look-back period. The mailing address should match and the owner should not claim the Homeowner Exemption on any other property.<br>• If the Homeowner Exemption was NOT taken, provide copies of the owner's car registration, homeowner's insurance, or other LAHD-approved third-party documents within the 5-year look-back period.",
+      "Vacancy Proof:<br>• Provide a copy of the Department of Water and Power (DWP) bill with activity periods covering the date of application.<br>• For the purposes of affordable unit replacement exemption, if the property was vacant for the entirety of the 5-year look-back period, provide each DWP bill within the 5-year period",
+      "Grant Deed (Recorded)",
+      "Ellis documents, tenant relocation documents (RSO units), if applicable",
+      "City Planning Determination and/or Vesting/Tentative Tract Letters, if applicable"
+    ];
+
+    const list = document.getElementById("attachmentList");
+
+    docs.forEach((doc, index) => {
+      const li = document.createElement("li");
+      li.className = "attachment-item";
+
+      li.innerHTML = `
+        <span class="attach-label">${doc}:</span>
+        <input type="file" id="fileInput${index}" style="display:none">
+
+        <svg class="icon-btn template-btn" data-index="${index}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-label="Download template">
+          <title>Download template</title>
+          <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm1 7V3.5L18.5 9H15zM12 19l-4-4h2.5v-3h3v3H16l-4 4z"/>
+        </svg>
+
+        <svg class="icon-btn upload-btn" data-index="${index}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-label="Upload">
+          <title>Upload</title>
+          <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.34v4h4.66V9h3.34L12 2z"/>
+        </svg>
+
+        <span class="filename" id="filename${index}">No file selected</span>
+
+        <svg class="icon-btn delete-btn" data-index="${index}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="visibility:hidden" aria-label="Remove">
+          <title>Remove</title>
+          <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-4.5l-1-1z"/>
+        </svg>
+      `;
+
+      list.appendChild(li);
+    });
+
+    document.querySelectorAll(".upload-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = btn.getAttribute("data-index");
+        document.getElementById(`fileInput${idx}`).click();
+      });
+    });
+
+    document.querySelectorAll(".template-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        downloadTemplate(idx);
+      });
+    });
+
+    function downloadTemplate(idx){
+      const raw = (docs[idx] || `Template ${idx+1}`).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      const safeName = raw
+        .slice(0, 60)
+        .replace(/[^a-z0-9\- _]/gi, "")
+        .replace(/\s+/g, "_")
+        .replace(/^_+|_+$/g, "") || `Template_${idx+1}`;
+
+      const filename = `${safeName}_Template.txt`;
+
+      const content =
+`TEMPLATE – ${raw}
+
+Instructions:
+- Replace this placeholder text with the official template content for this attachment.
+- Keep the Project Address at the top of each submitted page.
+
+(Template placeholder generated by the form UI.)`;
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    }
+
+    document.querySelectorAll("input[type=file]").forEach(input => {
+      input.addEventListener("change", (e) => {
+        const idx = e.target.id.replace("fileInput", "");
+        const file = e.target.files[0];
+        if (file){
+          document.getElementById(`filename${idx}`).textContent = file.name;
+          document.querySelector(`.delete-btn[data-index="${idx}"]`).style.visibility = "visible";
+        }
+      });
+    });
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = btn.getAttribute("data-index");
+        document.getElementById(`fileInput${idx}`).value = "";
+        document.getElementById(`filename${idx}`).textContent = "No file selected";
+        btn.style.visibility = "hidden";
+      });
+    });
+
+    function addTenant(){
+      const nameEl = document.getElementById('t_name');
+      const unitEl = document.getElementById('t_unit');
+      const rentEl = document.getElementById('t_rent');
+      const dateEl = document.getElementById('t_date');
+      const contactEl = document.getElementById('t_contact');
+      const emailEl = document.getElementById('t_email');
+      const bedroomsEl = document.getElementById('t_bedrooms');
+      const bathroomsEl = document.getElementById('t_bathrooms');
+
+      const name = nameEl.value.trim();
+      const unit = unitEl.value.trim();
+      const rent = rentEl.value.trim();
+      const date = dateEl.value.trim();
+      const contact = contactEl.value.trim();
+      const email = emailEl.value.trim();
+      const bedrooms = bedroomsEl.value.trim();
+      const bathrooms = bathroomsEl.value.trim();
+
+      if (!name || !unit || !rent || !date || !contact || !email){
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      const tbody = document.querySelector('#occupantsTable tbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(name)}</td>
+        <td>${escapeHtml(unit)}</td>
+        <td>${escapeHtml(rent)}</td>
+        <td>${escapeHtml(date)}</td>
+        <td>${escapeHtml(contact)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td style="text-align:center;">${escapeHtml(bedrooms)}</td>
+        <td style="text-align:center;">${escapeHtml(bathrooms)}</td>
+      `;
+      tbody.appendChild(tr);
+
+      nameEl.value = '';
+      unitEl.value = '';
+      rentEl.value = '';
+      dateEl.value = '';
+      contactEl.value = '';
+      emailEl.value = '';
+      bedroomsEl.value = '';
+      bathroomsEl.value = '';
+    }
+
+    const PORTAL_STORE_KEY = "LAHD_RUD_PORTAL_SUBMISSION";
+
+    function text(v){ return (v || "").toString().trim(); }
+
+    function getSectionCardByHeader(headerText){
+      const headers = Array.from(document.querySelectorAll('.section-header'));
+      const h = headers.find(x => (x.textContent || '').trim().toLowerCase() === headerText.trim().toLowerCase());
+      if(!h) return null;
+      let el = h.nextElementSibling;
+      while(el && !el.classList.contains('section-card')) el = el.nextElementSibling;
+      return el;
+    }
+
+    function readGridFields(sectionHeader){
+      const card = getSectionCardByHeader(sectionHeader);
+      if(!card) return [];
+      const grid = card.querySelector('.grid');
+      if(!grid) return [];
+      return Array.from(grid.querySelectorAll('input, select, textarea'));
+    }
+
+    function collectRudApplicationData(){
+      const po = readGridFields('Property Owner');
+      const owner = {
+        name: text(po[0]?.value),
+        contactPerson: text(po[1]?.value),
+        address: text(po[2]?.value),
+        phone: text(po[3]?.value),
+        fax: text(po[4]?.value),
+        cell: text(po[5]?.value),
+        email: text(po[6]?.value)
+      };
+
+      const oc = readGridFields('Owner Contact');
+      const ownerContact = {
+        title: text(oc[0]?.value),
+        contactPerson: text(oc[1]?.value),
+        address: text(oc[2]?.value),
+        phone: text(oc[3]?.value),
+        fax: text(oc[4]?.value),
+        cell: text(oc[5]?.value),
+        email: text(oc[6]?.value)
+      };
+
+      const ap = readGridFields('Applicant (If different from Owner)');
+      const applicant = {
+        name: text(ap[0]?.value),
+        contactPerson: text(ap[1]?.value),
+        address: text(ap[2]?.value),
+        phone: text(ap[3]?.value),
+        fax: text(ap[4]?.value),
+        cell: text(ap[5]?.value),
+        email: text(ap[6]?.value)
+      };
+
+      const piCard = getSectionCardByHeader('Project Information');
+      let projectType = [];
+      let proposedProjectType = "";
+      let entitlements = "";
+      let ura = "";
+      let palisades = false;
+      let description = "";
+      let vesting = "";
+      let ladbsBuild = "";
+      let ladbsDemo = "";
+      let dcpCase = "";
+
+      if(piCard){
+        const multi = piCard.querySelector('select[multiple]');
+        if(multi){
+          projectType = Array.from(multi.selectedOptions).map(o => o.value).filter(Boolean);
+        }
+
+        const stackSelects = Array.from(piCard.querySelectorAll('.field-stack select'));
+        proposedProjectType = text(stackSelects[0]?.value);
+        entitlements = text(stackSelects[1]?.value);
+        ura = text(stackSelects[2]?.value);
+        vesting = text(stackSelects[3]?.value);
+
+        const check = piCard.querySelector('input[type="checkbox"]');
+        palisades = !!check?.checked;
+
+        const txtareas = Array.from(piCard.querySelectorAll('textarea'));
+        description = text(txtareas[0]?.value);
+
+        const stackInputs = Array.from(piCard.querySelectorAll('.field-stack input'));
+        ladbsBuild = text(stackInputs[0]?.value);
+        ladbsDemo = text(stackInputs[1]?.value);
+        dcpCase = text(stackInputs[2]?.value);
+      }
+
+      const existingProperty = {
+        apn: text(document.getElementById('ex_apn')?.value),
+        lot: text(document.getElementById('ex_lot')?.value),
+        coo: text(document.getElementById('ex_coo')?.value),
+        lotTie: text(document.getElementById('ex_lot_tie')?.value),
+        withdrawn: text(document.getElementById('ex_withdrawn')?.value),
+        withdrawnDate: text(document.getElementById('ex_withdrawn_date')?.value)
+      };
+
+      const buildings = [];
+      const bRows = Array.from(document.querySelectorAll('#buildingsTable tr'));
+      bRows.forEach(tr => {
+        const tds = Array.from(tr.querySelectorAll('td')).map(td => text(td.textContent));
+        if(tds.length >= 4){
+          buildings.push({ addressUnits: tds[0], type: tds[1], bedrooms: tds[2], units: tds[3] });
+        }
+      });
+
+      let existingDescription = "";
+      const descLabel = Array.from(document.querySelectorAll('label')).find(l => (l.textContent||'').toLowerCase().includes('description of existing units'));
+      if(descLabel){
+        const ta = descLabel.parentElement?.querySelector('textarea');
+        if(ta) existingDescription = text(ta.value);
+      }
+
+      const expected = {};
+      const expHeader = Array.from(document.querySelectorAll('h4')).find(h => (h.textContent||'').toLowerCase().includes('expected dates'));
+      if(expHeader){
+        const grid = expHeader.nextElementSibling;
+        if(grid){
+          const dates = Array.from(grid.querySelectorAll('input[type="date"]'));
+          expected.ladbsPermit = text(dates[0]?.value);
+          expected.demo = text(dates[1]?.value);
+          expected.cofO = text(dates[2]?.value);
+          expected.cofC = text(dates[3]?.value);
+        }
+      }
+
+      const tiCard = getSectionCardByHeader('Tenant Information Table');
+      const tenantHeader = { projectAddress:"", ownerName:"", ownerPhone:"", ownerEmail:"" };
+      if(tiCard){
+        const grid = tiCard.querySelector(':scope > .grid');
+        if(grid){
+          const inputs = Array.from(grid.querySelectorAll('input'));
+          tenantHeader.projectAddress = text(inputs[0]?.value);
+          tenantHeader.ownerName = text(inputs[1]?.value);
+          tenantHeader.ownerPhone = text(inputs[2]?.value);
+          tenantHeader.ownerEmail = text(inputs[3]?.value);
+        }
+      }
+
+      const tenants = [];
+      const tRows = Array.from(document.querySelectorAll('#occupantsTable tbody tr'));
+      tRows.forEach(tr => {
+        const tds = Array.from(tr.querySelectorAll('td')).map(td => text(td.textContent));
+        if(tds.length >= 8){
+          tenants.push({
+            name: tds[0], unit: tds[1], rent: tds[2], date: tds[3], contact: tds[4], email: tds[5], beds: tds[6], baths: tds[7]
+          });
+        }
+      });
+
+      const uploadedDocs = [];
+      const docsCount = document.querySelectorAll('.filename[id^="filename"]').length;
+      for(let i=0;i<docsCount;i++){
+        const nameEl = document.getElementById(`filename${i}`);
+        const name = text(nameEl?.textContent);
+        uploadedDocs.push(name && name.toLowerCase() !== 'no file selected' ? name : "");
+      }
+
+      return {
+        meta: {
+          selectedOption: (function(){ try{return sessionStorage.getItem('landuse_selectedOption')||'';}catch(e){return '';} })(),
+          savedAt: new Date().toISOString()
+        },
+        owner,
+        ownerContact,
+        applicant,
+        projectInfo: {
+          projectType,
+          proposedProjectType,
+          entitlements,
+          ura,
+          palisades,
+          description,
+          vesting,
+          ladbsBuild,
+          ladbsDemo,
+          dcpCase
+        },
+        existingProperty,
+        buildings,
+        existingDescription,
+        expected,
+        tenantHeader,
+        tenants,
+        uploadedDocs
+      };
+    }
+
+    function persistAndGo(nextHref, mode){
+      const payload = collectRudApplicationData();
+      payload.meta.mode = mode || 'draft';
+      try{
+        localStorage.setItem(PORTAL_STORE_KEY, JSON.stringify(payload));
+      }catch(e){
+        console.warn('Unable to store portal submission in localStorage', e);
+      }
+      if(nextHref) window.location.href = nextHref;
+    }
+
+    function saveDraft(){
+      persistAndGo('3 Backend_LandUse.flow.step4.html', 'draft');
+    }
+
+    function submitForm(){
+      persistAndGo('3 Backend_LandUse.flow.step4.html', 'submitted');
+    }
+
+    function searchApn(){
+      const input = document.getElementById("ex_apn")?.value.trim() || "";
+      const selectedType = document.querySelector('input[name="apnSearchType"]:checked')?.value || "apn";
+      const resultCard = document.getElementById("apnResultCard");
+      const apnNumber = document.getElementById("apnResultNumber");
+      const addr1 = document.getElementById("apnResultAddress1");
+      const addr2 = document.getElementById("apnResultAddress2");
+
+      if(!input){
+        alert("Please enter an APN or address.");
+        return;
+      }
+
+      if(selectedType === "apn"){
+        apnNumber.textContent = input;
+        addr1.textContent = "3984 MOORE ST";
+        addr2.textContent = "LOS ANGELES, CA 90066";
+      }else{
+        apnNumber.textContent = "4236021016";
+        addr1.textContent = input.toUpperCase();
+        addr2.textContent = "LOS ANGELES, CA 90066";
+      }
+
+      resultCard.style.display = "flex";
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    (function(){
+      const sel = document.getElementById("ex_withdrawn");
+      const date = document.getElementById("ex_withdrawn_date");
+      if(!sel || !date) return;
+
+      function sync(){
+        const v = (sel.value || "").toLowerCase();
+        const show = v === "yes";
+        date.style.display = show ? "block" : "none";
+        if(!show) date.value = "";
+      }
+      sel.addEventListener("change", sync);
+      sync();
+    })();
+
+    (function(){
+      const poMap = {
+        name: document.getElementById("po_name"),
+        contactPerson: document.getElementById("po_contact_person"),
+        address: document.getElementById("po_address"),
+        phone: document.getElementById("po_phone"),
+        fax: document.getElementById("po_fax"),
+        cell: document.getElementById("po_cell"),
+        email: document.getElementById("po_email")
+      };
+
+      const ocToggle = document.getElementById("oc_same_as_po");
+      const apToggle = document.getElementById("ap_same_as_po");
+
+      const ocTargets = {
+        contactPerson: document.getElementById("oc_contact_person"),
+        address: document.getElementById("oc_address"),
+        phone: document.getElementById("oc_phone"),
+        fax: document.getElementById("oc_fax"),
+        cell: document.getElementById("oc_cell"),
+        email: document.getElementById("oc_email")
+      };
+
+      const apTargets = {
+        name: document.getElementById("ap_name"),
+        contactPerson: document.getElementById("ap_contact_person"),
+        address: document.getElementById("ap_address"),
+        phone: document.getElementById("ap_phone"),
+        fax: document.getElementById("ap_fax"),
+        cell: document.getElementById("ap_cell"),
+        email: document.getElementById("ap_email")
+      };
+
+      function copyOwnerToTargets(targets, includeName){
+        if(includeName && targets.name && poMap.name) targets.name.value = poMap.name.value || "";
+        if(targets.contactPerson && poMap.contactPerson) targets.contactPerson.value = poMap.contactPerson.value || "";
+        if(targets.address && poMap.address) targets.address.value = poMap.address.value || "";
+        if(targets.phone && poMap.phone) targets.phone.value = poMap.phone.value || "";
+        if(targets.fax && poMap.fax) targets.fax.value = poMap.fax.value || "";
+        if(targets.cell && poMap.cell) targets.cell.value = poMap.cell.value || "";
+        if(targets.email && poMap.email) targets.email.value = poMap.email.value || "";
+      }
+
+      function bindSyncSeparate(toggleEl, targets, includeName){
+        if(!toggleEl) return;
+        const localListeners = [];
+
+        const syncNow = () => copyOwnerToTargets(targets, includeName);
+
+        function bind(){
+          Object.values(poMap).forEach(inp => {
+            if(!inp) return;
+            const fn = () => { if(toggleEl.checked) syncNow(); };
+            inp.addEventListener("input", fn);
+            localListeners.push([inp, fn]);
+          });
+        }
+
+        function unbind(){
+          while(localListeners.length){
+            const [inp, fn] = localListeners.pop();
+            inp.removeEventListener("input", fn);
+          }
+        }
+
+        toggleEl.addEventListener("change", () => {
+          if(toggleEl.checked){
+            syncNow();
+            unbind();
+            bind();
+          }else{
+            unbind();
+          }
+        });
+
+        if(toggleEl.checked){
+          syncNow();
+          bind();
+        }
+      }
+
+      bindSyncSeparate(ocToggle, ocTargets, false);
+      bindSyncSeparate(apToggle, apTargets, true);
+    })();
+</script>
+</body>
+</html>
