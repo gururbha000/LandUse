@@ -755,15 +755,45 @@
 <div class="wrap">
 <!-- MAIN RECORD CARD -->
 <div class="card">
-<div class="card-pad">
-<div aria-label="Case fields" class="sn-form">
-<div class="sn-row">
-  <div class="sn-label">RUD Record Number</div>
-  <div class="sn-field">
-    <div class="rud-record" aria-label="RUD record number">
-      <input id="rudRecordNumber" class="sn-input rud-record-input" readonly value="RUD-822204" aria-label="RUD record number"/></div>
-  </div>
-</div>
+  <div class="card-pad">
+    <div aria-label="Case fields" class="sn-form">
+      <div class="case-fields-grid">
+
+        <div class="case-col-left">
+
+          <!--RUD + SNOW Project Number -->
+          <div class="sn-row" style="display:flex; gap:32px; margin-bottom:16px;">
+            
+            <!-- RUD Record Number -->
+            <div style="flex:1; min-width:250px;">
+              <div class="sn-label" style="margin-bottom:6px;">RUD Record Number</div>
+              <div class="sn-field">
+                <div aria-label="RUD Record Number" class="rud-record">
+                  <input aria-label="RUD record number"
+                         class="sn-input rud-record-input"
+                         id="rudRecordNumber"
+                         readonly
+                         value="RUD-822204"
+                         style="width:100%;" />
+                </div>
+              </div>
+            </div>
+
+            <!-- SNOW Project Number -->
+            <div style="flex:1; min-width:250px;">
+              <div class="sn-label" style="margin-bottom:6px;">SNOW Project Number</div>
+              <div class="sn-field">
+                <div aria-label="SNOW Project Number" class="rud-record">
+                  <input aria-label="SNOW project number"
+                         class="sn-input rud-record-input"
+                         id="snowProjectNumber"
+                         readonly
+                         value="SNOW-123456"
+                         style="width:100%;" />
+                </div>
+              </div>
+            </div>
+          </div>
 
 <div class="sn-row">
   <div class="sn-label">Status</div>
