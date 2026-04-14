@@ -756,45 +756,55 @@
 <!-- MAIN RECORD CARD -->
 <div class="card">
 <div class="card-pad">
-<div aria-label="Case fields" class="sn-form"><div class="case-fields-grid"><div class="case-col-left"><div class="sn-row">
-<div class="sn-label">RUD Record Number</div>
-<div class="sn-field"><div aria-label="RUD Record Number" class="rud-record"><input aria-label="RUD record number" class="sn-input rud-record-input" id="rudRecordNumber" readonly="" value="RUD-822204"/></div></div>
-</div><div class="sn-row">
-<div class="sn-label">Status</div>
-<div class="sn-field">
-<div aria-label="Status" class="rud-record">
-<select aria-label="Status" class="sn-input rud-compact" id="caseStatus">
-<option selected="" value="">-- Select --</option>
-<option value="Received">Received</option>
-<option value="Initial Review">Initial Review</option>
-<option value="Revision Needed">Revision Needed</option>
-<option value="Complete">Complete</option>
-</select>
+<div aria-label="Case fields" class="sn-form">
+<div class="sn-row">
+  <div class="sn-label">RUD Record Number</div>
+  <div class="sn-field">
+    <div class="rud-record" aria-label="RUD record number">
+      <input id="rudRecordNumber" class="sn-input rud-record-input" readonly value="RUD-822204" aria-label="RUD record number"/></div>
+  </div>
 </div>
-</div>
-</div><div class="sn-row">
-<div class="sn-label">Assigned Group</div>
-<div class="sn-field">
-<div aria-label="Assigned Group" class="rud-record">
-<select aria-label="Assigned Group" class="sn-input rud-compact" id="assignedGroup">
-<option selected="" value="">-- Select --</option>
-<option value="RPD RDO Group">RPD RDO Group</option>
-</select>
-</div>
-</div>
-</div><div class="sn-row">
-<div class="sn-label">Assigned to</div>
-<div class="sn-field">
-<div aria-label="Assigned to" class="rud-record">
-<select aria-label="Assigned to" class="sn-input rud-compact" id="assignedTo">
-<option selected="" value="">-- Select --</option>
-<option value="Micheal Z">Micheal Z</option>
-</select>
-</div>
-</div>
-</div></div><div class="case-col-right"><div class="sn-row"><div class="sn-label">HIMS Project Number</div><div class="sn-field"><div aria-label="HIMS Project Number" class="rud-record"><input aria-label="HIMS project number" class="sn-input rud-record-input" id="himsProjectNumber" readonly="" value="20-127554"/></div></div></div></div></div>
 
+<div class="sn-row">
+  <div class="sn-label">Status</div>
+  <div class="sn-field">
+    <div class="rud-record" aria-label="Status">
+      <select id="caseStatus" class="sn-input rud-compact" aria-label="Status">
+<option value="" selected>-- Select --</option>
+      <option value="Received">Received</option>
+      <option value="Initial Review">Initial Review</option>
+      <option value="Revision Needed">Revision Needed</option>
+      <option value="Complete">Complete</option>
+    </select>
+    </div>
+  </div>
+</div>
 
+<div class="sn-row">
+  <div class="sn-label">Assigned Group</div>
+  <div class="sn-field">
+    <div class="rud-record" aria-label="Assigned Group">
+      <select id="assignedGroup" class="sn-input rud-compact" aria-label="Assigned Group">
+      <option value="" selected>-- Select --</option>
+      <option value="RPD RDO Group">RPD RDO Group</option>
+    </select>
+    </div>
+  </div>
+</div>
+
+<div class="sn-row">
+  <div class="sn-label">Assigned to</div>
+  <div class="sn-field">
+    <div class="rud-record" aria-label="Assigned to">
+      <select id="assignedTo" class="sn-input rud-compact" aria-label="Assigned to">
+      <option value="" selected>-- Select --</option>
+      <option value="Micheal Z">Micheal Z</option>
+    </select>
+    </div>
+  </div>
+</div>
+
+</div></div><div class="case-col-right"><div class="sn-row"><div class="sn-label">SNOW Project Number</div><div class="sn-field"><div aria-label="HIMS Project Number" class="rud-record"><input aria-label="HIMS project number" class="sn-input rud-record-input" id="himsProjectNumber" readonly="" value="20-127554"/></div></div></div></div></div>
 
 
 <div style="padding-top:16px; border-top:1px solid #e7e9ee; margin-top:8px;"></div>
