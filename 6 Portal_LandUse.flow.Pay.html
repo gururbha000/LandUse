@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>LAHD – ServiceNow Case View (RUD)</title>
+<style>
+    :root{
+      --lahd-blue:#3f6177;
+      --lahd-bg:#f4f6f8;
+      --border:#d6d6d6;
+      --text-dark:#1f2f3a;
+
+      --sn-topbar:#0b1220;
+      --sn-topbar-2:#111a2e;
+      --sn-subbar:#eef0f2;
+
+      --radius:10px;
+      --shadow: 0 2px 10px rgba(0,0,0,.06);
+      --purple:#4f46e5;
+    }
+
+    *{ box-sizing:border-box; font-family: Arial, Helvetica, sans-serif; }
+    body{ margin:0; background:var(--lahd-bg); color:#111; }
+
+    /* ======= TOP NAV (ServiceNow-ish) ======= */
+    .sn-topbar{
+      height:64px;
+      background: linear-gradient(90deg, var(--sn-topbar), var(--sn-topbar-2));
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px;
+      position:sticky;
+      top:0;
+      z-index:50;
+    }
+    .sn-left{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-width: 320px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .brand img{
+      height:34px;
+      width:auto;
+      background:#fff;
+      border-radius:6px;
+      padding:4px 6px;
+    }
+    .brand small{
+      display:block;
+      font-weight:600;
+      font-size:10px;
+      opacity:.9;
+      margin-top:2px;
+      letter-spacing:.4px;
+    }
+
+    .sn-nav{
+      display:flex;
+      align-items:center;
+      gap:20px;
+      opacity:.95;
+      font-size:16px;
+      white-space:nowrap;
+    }
+    .sn-nav a{
+      color:#fff;
+      text-decoration:none;
+      padding:8px 10px;
+      border-radius:8px;
+    }
+    .sn-nav a:hover{ background: rgba(255,255,255,.08); }
+
+    .sn-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 340px;
+      justify-content:flex-end;
+    }
+    .case-pill{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border: 1px solid rgba(255,255,255,.35);
+      padding:10px 14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      font-weight:700;
+    }
+    .icon-btn{
+      width:18px;height:18px;
+      fill: currentColor;
+      display:inline-block;
+      vertical-align:middle;
+    }
+    .pill-star{ color:#ffd86b; }
+
+    /* ======= SUB HEADER ======= */
+    .sn-subbar{
+      background: var(--sn-subbar);
+      border-bottom:1px solid #d9dde3;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      position:sticky;
+      top:64px;
+      z-index:40;
+    }
+    .sub-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .sub-right{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex: 0 0 auto;
+    }
+    .btn-square{
+      width:40px;height:40px;
+      border-radius:10px;
+      border:1px solid #cfd6df;
+      background:#fff;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      box-shadow: 0 1px 6px rgba(0,0,0,.04);
+    }
+    .btn-square:hover{ background:#f7f9fb; }
+    .sub-title{
+      font-size:18px;
+      font-weight:800;
+      color:#1f2f3a;
+      line-height:1.1;
+    }
+    .sub-title span{
+      display:block;
+      font-weight:700;
+      opacity:.85;
+    }
+
+    /* ======= PAGE LAYOUT (LEFT-ALIGNED) ======= */
+    .wrap{
+      width: calc(100% - 32px);
+      margin: 18px 16px 48px; /* left aligned, no auto-centering */
+      padding: 0;
+      max-width: none;
+    }
+
+    .card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:12px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card-pad{ padding: 18px 18px 14px; }
+
+    /* ======= FORM ROWS (SN look) ======= */
+    .sn-form{ padding: 6px 0 2px; }
+    /* Case header two-column layout (RUD + Status/Assignment on left, HIMS on right) */
+    .case-fields-grid{
+      display:grid;
+      grid-template-columns: 1fr 1000px;
+      gap: 18px;
+      align-items:start;
+      margin-bottom: 6px;
+    }
+    .case-col-right .sn-row{
+      margin-top: 0;
+    }
+    @media (max-width: 860px){
+      .case-fields-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sn-row{
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
+      padding: 10px 0;
+    }
+    .sn-label{
+      width: 320px;
+      min-width: 320px;
+      text-align:left;          /* LEFT aligned labels */
+      padding-top: 10px;
+      color:#111;
+      font-size:16px;
+      font-weight:700;
+    }
+    .sn-field{
+      flex:1;
+      max-width: none;          /* allow full width */
+    }
+    .sn-input{
+      width:100%;
+      padding:12px 12px;
+      font-size:16px;
+      border-radius:8px;
+      border: 1px solid #cfd6df;
+      background:#e9ecef;
+      color:#111;
+    }
+
+    /* RUD Record Number: clean single field + copy */
+    .rud-record{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      max-width: 520px;
+    }
+    .rud-record-input{
+      background:#fff;
+      font-weight:900;
+      letter-spacing:.6px;
+      font-variant-numeric: tabular-nums;
+      max-width: 380px;
+    }
+    /* RUD-sized controls (for selects etc.) */
+    .rud-compact{
+      background:#fff;
+      max-width: 380px;
+    }
+
+    .rud-copy{
+      width:42px;
+      height:42px;
+    }
+    .rud-hint{
+      font-size:12px;
+      font-weight:800;
+      color:#0f766e;
+      min-width: 64px;
+    }
+
+    @media (max-width: 680px){
+      .rud-record{ max-width: none; }
+      .rud-record-input{ max-width: none; }
+      .rud-compact{ max-width: none; }
+    }
+
+    /* ======= TABS ======= */
+    .tabs{
+      margin-top: 14px;
+      border-top:1px solid #e7e9ee;
+      background:#fff;
+    }
+    .tabbar{
+      display:flex;
+      align-items:flex-end;
+      gap:6px;
+      padding: 10px 12px 0;
+      border-bottom:1px solid #e7e9ee;
+      flex-wrap:wrap;
+    }
+    .tab{
+      border:1px solid #cfd6df;
+      border-bottom:none;
+      background:#f6f7f9;
+      padding:10px 14px;
+      border-top-left-radius:10px;
+      border-top-right-radius:10px;
+      cursor:pointer;
+      font-weight:800;
+      color:#1f2f3a;
+      user-select:none;
+    }
+    .tab.active{
+      background:#fff;
+      border-color:#cfd6df;
+      position:relative;
+      top:1px;
+    }
+    .panel{ display:none; padding: 18px; }
+    .panel.active{ display:block; }
+
+    /* ======= LAHD section/card styles ======= */
+    .section-header{
+      background: var(--lahd-blue);
+      color:#fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      margin: 0 0 12px;
+    }
+    .section-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px 18px;
+      align-items:start;
+    }
+    .field{ display:flex; flex-direction:column; }
+    label{ font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a; }
+    input, select, textarea{
+      padding:10px;
+      border:1px solid #bfc7d1;
+      border-radius:8px;
+      font-size:14px;
+      background:#fff;
+    }
+    textarea{ min-height:90px; resize: vertical; }
+    .full{ grid-column: 1 / -1; }
+
+    .note{
+      font-size:12px;
+      color:#44515d;
+      margin-top:6px;
+    }
+
+    /* Tables */
+    .table-wrap{
+      border:1px solid #e4e7ee;
+      border-radius:10px;
+      overflow:hidden;
+      background:#fff;
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:13px;
+    }
+    thead{ background: var(--lahd-blue); color:#fff; }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid #e4e7ee;
+      vertical-align: top;
+      text-align:left;
+    }
+    tbody tr:nth-child(even){ background:#f8fafc; }
+    tbody tr:hover{ background:#eef4f7; }
+
+    /* Buttons */
+    .btn-primary{
+      background: var(--lahd-blue);
+      color:#fff;
+      border:none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn-secondary{
+      background:#fff;
+      color: var(--purple);
+      border:1px solid var(--purple);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn-primary:hover{ opacity:.92; }
+    .btn-secondary:hover{ background:#f6f5ff; }
+
+    .btn-approve{
+      background:#16a34a;
+      color:#fff;
+      border:none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn-approve:hover{ opacity:.92; }
+
+    .mini-action{
+      width:34px;height:34px;
+      border-radius:10px;
+      border:1px solid #cfd6df;
+      background:#fff;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+    }
+    .mini-action:hover{ background:#f7f9fb; }
+    .mini-action svg{ width:18px;height:18px; fill: var(--lahd-blue); }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+      border:1px solid #cfd6df;
+      background:#f6f7f9;
+      width: max-content;
+    }
+    .status-ok{ background:#e9f7ef; border-color:#a7e1bf; color:#166534; }
+    .status-missing{ background:#fff3cd; border-color:#ffe08a; color:#7a4b00; }
+    .status-na{ background:#f1f5f9; border-color:#d5dde8; color:#334155; }
+
+    /* Existing property mini-form */
+    .existing-property{
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .existing-property-title{
+      font-weight: 900;
+      margin: 0 0 10px;
+      font-size: 13px;
+      text-transform: uppercase;
+      color:#1f2f3a;
+    }
+    .existing-property-title span{
+      font-weight: 700;
+      text-transform: none;
+      opacity:.9;
+    }
+    .existing-prop-input{
+      background: #eef3ff;
+      border-color: #d3dcf0;
+      height: 40px;
+    }
+    .existing-prop-inline{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .existing-prop-inline > *{ flex: 1 1 180px; }
+
+    /* Contact table inputs */
+    .t-input, .t-select{
+      width:100%;
+      padding:10px;
+      border:1px solid #bfc7d1;
+      border-radius:8px;
+      font-size:13px;
+      background:#fff;
+    }
+    .t-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    .small-link{
+      background:none;
+      border:none;
+      color:var(--purple);
+      font-weight:900;
+      cursor:pointer;
+      padding:0;
+      text-decoration: underline;
+    }
+
+    /* Required docs columns alignment */
+    /* Columns: 1 Attachment, 2 Applicant File, 3 Applicant Status, 4 Decision, 5 Reject Reason, 6 Staff Attachment, 7 Validated */
+    .docs-table td:nth-child(2),
+    .docs-table td:nth-child(6){
+      min-width: 220px;
+    }
+    .docs-table td:nth-child(4){
+      width:160px;
+    }
+    .docs-table td:nth-child(5){
+      min-width: 240px;
+    }
+    .docs-table td:nth-child(7){
+      text-align:center;
+      width:120px;
+      white-space:nowrap;
+    }
+    .file-cell{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .file-name{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width: 360px;
+      opacity:.95;
+    }
+
+    @media (max-width: 980px){
+      .sn-nav{ display:none; }
+      .sn-label{ width: 220px; min-width: 220px; font-size:14px; }
+    }
+    @media (max-width: 760px){
+      .sn-subbar{ align-items:flex-start; }
+      .sub-right{ flex-wrap:wrap; justify-content:flex-end; }
+    }
+    @media (max-width: 680px){
+      .sn-row{ flex-direction:column; gap:8px; }
+      .sn-label{ width:auto; min-width:auto; text-align:left; padding-top:0; }
+      .grid{ grid-template-columns: 1fr; }
+      .docs-table td:nth-child(2),
+      .docs-table td:nth-child(4),
+      .docs-table td:nth-child(5){ min-width: 160px; }
+      .file-name{ max-width: 180px; }
+    }
+  
+
+    /* Added for LandUseRUD Project Information layout */
+    .field-stack{ display:flex; flex-direction:column; gap:20px; }
+
+    /* Maximize space for the TOP Project Information area */
+    .project-info-block{ padding-top: 6px; }
+    .project-info-top{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 14px 18px;
+      align-items:start;
+    }
+    .project-info-top .full{ grid-column: 1 / -1; }
+
+    /* Project Type as checkbox list */
+    .checkbox-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 8px 14px;
+      padding: 10px 12px;
+      border: 1px solid #bfc7d1;
+      border-radius: 8px;
+      background:#fff;
+    }
+    .checkbox-grid label{
+      font-weight:700;
+      font-size:13px;
+      margin:0;
+      color:#1f2f3a;
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .checkbox-grid input{ width:auto; padding:0; border: none; }
+
+    @media (min-width: 1200px){
+      /* Keep Project Information at 2 columns for readability while using width efficiently */
+      .project-info-top{ grid-template-columns: repeat(2, minmax(340px, 1fr)); }
+      .checkbox-grid{ grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+    }
+    @media (max-width: 860px){
+      .project-info-top{ grid-template-columns: 1fr; }
+      .checkbox-grid{ grid-template-columns: 1fr; }
+    }
+
+
+    /* RUD + HIMS record numbers side-by-side */
+    .rud-pair{
+      display:flex;
+      align-items:flex-start;
+      gap:16px;
+      flex-wrap:wrap;
+      max-width: 100%;
+    }
+    .rud-pair-item{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 260px;
+    }
+    .rud-mini-label{
+      font-size:12px;
+      font-weight:900;
+      color:#1f2f3a;
+      letter-spacing:.2px;
+      opacity:.92;
+    }
+
+    /* ======= ACCOUNTING RUD FEES =======
+       Make it match the existing LAHD/SN form feel: lighter borders, smaller controls, editable inputs.
+    */
+    .acct-wrap{
+      max-width: 980px;
+    }
+    .acct-table{
+      width: 100%;
+      border-collapse: collapse;
+      max-width: 720px;
+      margin: 0 0 16px;
+      border: 1px solid #e4e7ee;
+      border-radius:10px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .acct-table td{
+      border-bottom: 1px solid #e4e7ee;
+      padding: 10px 12px;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    .acct-table tr:last-child td{ border-bottom:none; }
+    .acct-label{
+      width: 240px;
+      background: #f8fafc;
+      font-weight: 800;
+      color:#1f2f3a;
+      font-size: 13px;
+    }
+    .acct-input{
+      background:#fff;
+    }
+    .acct-input input{
+      width:100%;
+      height:40px;
+    }
+
+    .fee-card{
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      border: 1px solid #e4e7ee;
+      border-radius:10px;
+      overflow:hidden;
+      max-width: 980px;
+      background:#fff;
+    }
+    .fee-rate{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      padding: 14px 16px;
+      border-right: 1px solid #e4e7ee;
+      background:#fff;
+    }
+    .fee-rate-text{
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 900;
+      color:#1f2f3a;
+      white-space: nowrap;
+    }
+    .fee-metrics{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      background:#fff;
+    }
+    .fee-metric{
+      display:flex;
+      flex-direction:column;
+      min-width: 0;
+    }
+    .fee-metric + .fee-metric{
+      border-left: 1px solid #e4e7ee;
+    }
+    .fee-metric-h{
+      background:#f6f7f9;
+      border-bottom: 1px solid #e4e7ee;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      color:#1f2f3a;
+    }
+    .fee-metric-v{
+      padding: 10px 12px;
+      height: 52px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 14px;
+      background:#fff;
+    }
+    .fee-metric-v input{
+      width: 100%;
+      height:40px;
+      text-align:center;
+      background:#fff;
+    }
+
+    @media (max-width: 980px){
+      .fee-card{ grid-template-columns: 1fr; }
+      .fee-rate{ border-right:none; border-bottom: 1px solid #e4e7ee; }
+      .fee-rate-text{ white-space: normal; }
+    }
+</style>
+</head>
+<body>
+<!-- TOP NAV -->
+<div class="sn-topbar">
+<div class="sn-left">
+<div class="brand">
+<img alt="LAHD Logo" onerror="this.style.display='none'" src="LA_HCID_Logo_Web_1.png"/>
+<div>
+<div style="font-size:18px; line-height:1;">LAHD</div>
+<small>LOS ANGELES HOUSING DEPARTMENT</small>
+</div>
+</div>
+<nav aria-label="Top navigation" class="sn-nav">
+<a href="#">All</a>
+<a href="#">Favorites</a>
+<a href="#">History</a>
+<a href="#">Admin</a>
+<a aria-label="More" href="#">⋮</a>
+</nav>
+</div>
+<div class="sn-right">
+<div class="case-pill" title="Case">
+<span><span id="caseNumberTop">RUD-822204</span></span>
+<svg aria-hidden="true" class="icon-btn pill-star" viewbox="0 0 24 24">
+<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- SUB HEADER (Update/Delete at top-right across from ICN...) -->
+<div class="sn-subbar">
+<div class="sub-left">
+<button aria-label="Back" class="btn-square" type="button">
+<svg aria-hidden="true" class="icon-btn" viewbox="0 0 24 24">
+<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#3f6177"></path>
+</svg>
+</button>
+<button aria-label="Menu" class="btn-square" type="button">
+<svg aria-hidden="true" class="icon-btn" viewbox="0 0 24 24">
+<path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="#3f6177"></path>
+</svg>
+</button>
+<div class="sub-title">
+        Replacement Unit Determination
+        <span id="caseNumberSub">RUD-822204</span>
+</div>
+</div>
+<div aria-label="Top actions" class="sub-right">
+<button class="btn-primary" onclick="doUpdate()" type="button">Update</button>
+<button class="btn-secondary" onclick="doReject()" type="button">Reject</button>
+<button class="btn-approve" onclick="doApprove()" type="button">Approve</button>
+</div>
+</div>
+<div class="wrap">
+<!-- MAIN RECORD CARD -->
+<div class="card">
+<div class="card-pad">
+<div aria-label="Case fields" class="sn-form"><div class="case-fields-grid"><div class="case-col-left"><div class="sn-row">
+<div class="sn-label">RUD Record Number</div>
+<div class="sn-field"><div aria-label="RUD Record Number" class="rud-record"><input aria-label="RUD record number" class="sn-input rud-record-input" id="rudRecordNumber" readonly="" value="RUD-822204"/></div></div>
+</div><div class="sn-row">
+<div class="sn-label">Status</div>
+<div class="sn-field">
+<div aria-label="Status" class="rud-record">
+<select aria-label="Status" class="sn-input rud-compact" id="caseStatus">
+<option selected="" value="">-- Select --</option>
+<option value="Received">Received</option>
+<option value="Initial Review">Initial Review</option>
+<option value="Revision Needed">Revision Needed</option>
+<option value="Complete">Complete</option>
+</select>
+</div>
+</div>
+</div><div class="sn-row">
+<div class="sn-label">Assigned Group</div>
+<div class="sn-field">
+<div aria-label="Assigned Group" class="rud-record">
+<select aria-label="Assigned Group" class="sn-input rud-compact" id="assignedGroup">
+<option selected="" value="">-- Select --</option>
+<option value="RPD RDO Group">RPD RDO Group</option>
+</select>
+</div>
+</div>
+</div><div class="sn-row">
+<div class="sn-label">Assigned to</div>
+<div class="sn-field">
+<div aria-label="Assigned to" class="rud-record">
+<select aria-label="Assigned to" class="sn-input rud-compact" id="assignedTo">
+<option selected="" value="">-- Select --</option>
+<option value="Micheal Z">Micheal Z</option>
+</select>
+</div>
+</div>
+</div></div><div class="case-col-right"><div class="sn-row"><div class="sn-label">HIMS Project Number</div><div class="sn-field"><div aria-label="HIMS Project Number" class="rud-record"><input aria-label="HIMS project number" class="sn-input rud-record-input" id="himsProjectNumber" readonly="" value="20-127554"/></div></div></div></div></div>
+
+
+
+
+<div style="padding-top:16px; border-top:1px solid #e7e9ee; margin-top:8px;"></div>
+<div class="section-header" style="margin: 0 0 12px;">Project Information</div>
+<div class="section-card" style="padding:16px;">
+<div class="project-info-top">
+<div class="field full">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Project Type</label>
+<div class="note" style="margin:0 0 6px;">* Project Type (Select all that apply).</div>
+<div class="checkbox-grid" id="top_project_type_group">
+<label><input class="projtype" type="checkbox" value="Density Bonus"/> Density Bonus</label>
+<label><input class="projtype" type="checkbox" value="TOC"/> TOC</label>
+<label><input class="projtype" type="checkbox" value="PSH Ordinance"/> PSH Ordinance</label>
+<label><input class="projtype" type="checkbox" value="JJJ"/> JJJ</label>
+<label><input class="projtype" type="checkbox" value="Zoning Variance"/> Zoning Variance</label>
+<label><input class="projtype" type="checkbox" value="Recs and Parks Exemption"/> Recs and Parks Exemption</label>
+<label><input class="projtype" type="checkbox" value="RSO Exemption"/> RSO Exemption</label>
+<label><input class="projtype" type="checkbox" value="Specific Plan Adjustment"/> Specific Plan Adjustment</label>
+<label><input class="projtype" type="checkbox" value="SB 35"/> SB 35</label>
+<label><input class="projtype" type="checkbox" value="AB 2162"/> AB 2162</label>
+<label><input class="projtype" type="checkbox" value="Senior Housing Project"/> Senior Housing Project</label>
+<label><input class="projtype" type="checkbox" value="Mello"/> Mello</label>
+<label><input class="projtype" type="checkbox" value="Residential Hotel"/> Residential Hotel</label>
+<label><input class="projtype" type="checkbox" value="CHIP"/> CHIP</label>
+<label><input class="projtype" type="checkbox" value="SB 684/SB 1123"/> SB 684/SB 1123</label>
+</div>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Proposed Project Type</label>
+<select class="sn-input" id="top_proposed_project_type" style="background:#fff;">
+<option value="">-- Select --</option>
+<option>Rental Unit</option>
+<option>Unit For Sale</option>
+<option>Small Lot Subdivision</option>
+<option>100% Affordable Housing Project</option>
+<option>ED 1 100% Affordable Housing Project</option>
+</select>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Entitlements with DCP?</label>
+<select class="sn-input" id="top_entitlements" style="background:#fff;">
+<option>No</option>
+<option>Yes</option>
+</select>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Subject to URA?</label>
+<select class="sn-input" id="top_ura" style="background:#fff;">
+<option>No</option>
+<option>Yes</option>
+</select>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">
+<input id="top_palisades" style="margin-right:8px; transform: translateY(2px);" type="checkbox"/>
+          Palisades Fire Rebuild
+        </label>
+<div class="note" style="margin:0;">* Permitting fees for rebuildings of SFDs and duplexes are suspended per EO7.</div>
+</div>
+<div class="field full">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Description of Proposed Construction / Conversion</label>
+<textarea class="sn-input" id="top_description" placeholder="Brief description..." style="background:#fff; min-height:90px; resize:vertical;"></textarea>
+</div>
+<div class="field full">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Not subject to the RPO due to vesting prior to Feb 11, 2025</label>
+<div class="note" style="margin:0 0 6px;">* Project may still be subject to the Housing Crisis Act of 2019. Choose 1 of the following:</div>
+<select class="sn-input" id="top_vesting" style="background:#fff;">
+<option>N/A</option>
+<option>A Department of Building and Safety application was filed and fees paid per 13B.10 of Chapter 1A of the LAMC</option>
+<option>A Department of City Planning preliminary application was filed, fees paid and complete per the Housing Crisis Act (HCA) (form CP13-4062)</option>
+<option>A Department of City Planning entitlement application was filed for vesting zone changes, general plan amendments and subdivisions</option>
+</select>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">LADBS Building Permit Number(s)</label>
+<input class="sn-input" id="top_ladbs_build" placeholder="e.g., 23010-10000-00001" style="background:#fff;"/>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">LADBS Demolition Permit Number(s)</label>
+<input class="sn-input" id="top_ladbs_demo" style="background:#fff;"/>
+</div>
+<div class="field">
+<label style="font-weight:800; font-size:13px; margin-bottom:6px; color:#1f2f3a;">Department of City Planning Case Number(s)</label>
+<input class="sn-input" id="top_dcp_case" style="background:#fff;"/>
+</div>
+</div>
+</div>
+<div class="tabs">
+<div aria-label="Case tabs" class="tabbar" role="tablist">
+<div aria-selected="true" class="tab active" data-tab="contacts" role="tab" tabindex="0">Contacts Information</div>
+<div aria-selected="false" class="tab" data-tab="existing" role="tab" tabindex="0">Existing Building</div>
+<div aria-selected="false" class="tab" data-tab="docs" role="tab" tabindex="0">Required Documents</div>
+<div aria-selected="false" class="tab" data-tab="tenants" role="tab" tabindex="0">Tenant Information Table</div>
+<div aria-selected="false" class="tab" data-tab="accounting" role="tab" tabindex="0">Accounting RUD Fees</div>
+</div>
+<!-- CONTACTS (TABLE W/ CONTACT TYPE DROPDOWN + MULTI CONTACTS) -->
+<section aria-label="Contacts Information" class="panel active" id="panel-contacts" role="tabpanel">
+<div class="section-header">Contacts Information</div>
+<div class="section-card">
+<div class="table-wrap">
+<table aria-label="Contacts table">
+<thead>
+<tr>
+<th style="width:220px;">Contact Type</th>
+<th style="width:180px;">Name</th>
+<th style="width:160px;">Phone</th>
+<th style="width:220px;">Email</th>
+<th>Address</th>
+<th style="width:90px; text-align:right;">Remove</th>
+</tr>
+</thead>
+<tbody id="contactsBody"></tbody>
+</table>
+</div>
+<div class="t-actions">
+<button class="btn-primary" onclick="addContactRow()" type="button">Add Contact</button>
+<button class="btn-secondary" onclick="seedContacts()" type="button">Load Sample</button>
+</div>
+<div class="note">
+              Each row represents a contact associated with the case. Choose a Contact Type and complete fields as needed.
+            </div>
+</div>
+</section>
+<!-- EXISTING BUILDINGS -->
+<section aria-label="Existing Building" class="panel" id="panel-existing" role="tabpanel">
+<div class="section-header">Existing Building</div>
+<div class="section-card">
+<div class="existing-property">
+<div class="existing-property-title">
+                EXISTING PROPERTY
+                <span>(include ALL existing buildings within the last 5 years in complex)</span>
+</div>
+<div class="grid">
+<div class="field">
+<label>APN Number(s)</label>
+<input class="existing-prop-input"/>
+</div>
+<div class="field">
+<label>Lot Number(s)</label>
+<input class="existing-prop-input"/>
+</div>
+<div class="field">
+<label>Certificate of Occupancy issued on or before Oct 1, 1978?</label>
+<select class="existing-prop-input">
+<option value="">Select</option>
+<option>Yes</option><option>No</option><option>Unknown</option>
+</select>
+</div>
+<div class="field">
+<label>Recorded lot tie?</label>
+<select class="existing-prop-input">
+<option value="">Select</option>
+<option>Yes</option><option>No</option><option>Unknown</option>
+</select>
+</div>
+<div class="field full">
+<label>Withdrawn from rent/lease within the last 10 years? If yes, provide the date</label>
+<div class="existing-prop-inline">
+<select class="existing-prop-input" id="withdrawnSelect">
+<option value="">Select</option>
+<option>Yes</option><option>No</option><option>Unknown</option>
+</select>
+<input class="existing-prop-input" id="withdrawnDate" style="display:none" type="date"/>
+</div>
+</div>
+<div class="field full">
+<label>Description of existing units/buildings/APN within the last five years</label>
+<textarea placeholder="Describe existing conditions..."></textarea>
+</div>
+</div>
+</div>
+<div class="grid">
+<div class="field"><label>Building Address / Unit #s</label><input id="b_address"/></div>
+<div class="field">
+<label>Building Type</label>
+<select id="b_type">
+<option value="">Select One</option>
+<option>Single Family</option>
+<option>Duplex</option>
+<option>Triplex</option>
+<option>Apartment</option>
+</select>
+</div>
+<div class="field"><label># Bedrooms per Unit</label><input id="b_bedrooms" type="number"/></div>
+<div class="field"><label># Units in Building</label><input id="b_units" type="number"/></div>
+<div class="field full">
+<button class="btn-primary" onclick="addBuilding()" type="button">Add Building</button>
+</div>
+</div>
+<div class="table-wrap" style="margin-top:10px;">
+<table aria-label="Existing buildings table">
+<thead>
+<tr>
+<th>Address / Units</th>
+<th>Type</th>
+<th>Bedrooms</th>
+<th># Units</th>
+</tr>
+</thead>
+<tbody id="buildingsTable"></tbody>
+</table>
+</div>
+<div style="display:flex; justify-content:flex-end; margin-top:10px; font-weight:900;">
+              Total Units in Complex: <span id="totalUnits">0</span>
+</div>
+</div>
+</section>
+<!-- REQUIRED DOCS (REMOVE TEMPLATE COLUMN, ADD STAFF ATTACHMENT + VALIDATED CHECKBOX) -->
+<section aria-label="Required Documents" class="panel" id="panel-docs" role="tabpanel">
+<div class="section-header">Required Documents</div>
+<div class="section-card">
+<div class="note" style="margin-bottom:10px;">
+              Upload applicant files, add staff attachments as needed, and mark items validated when reviewed.
+            </div>
+<div class="table-wrap">
+<table aria-label="Attachments table" class="docs-table">
+<thead>
+<tr>
+<th style="width:36%;">Attachment</th>
+<th>Applicant File</th>
+<th style="width:160px;">Applicant Status</th>
+<th style="width:160px;">Decision</th>
+<th style="width:240px;">Reject Reason</th>
+<th>Staff Attachment</th>
+<th style="width:120px; text-align:center;">Validated</th>
+</tr>
+</thead>
+<tbody id="attachBody"></tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- TENANTS -->
+<section aria-label="Tenant Information Table" class="panel" id="panel-tenants" role="tabpanel">
+<div class="section-header">Tenant Information Table</div>
+<div class="section-card">
+<div class="grid">
+<div class="field"><label>Name(s) of Occupant(s)</label><input id="t_name"/></div>
+<div class="field"><label>Unit Number</label><input id="t_unit"/></div>
+<div class="field"><label>Rent Amount</label><input id="t_rent" step="0.01" type="number"/></div>
+<div class="field"><label>Occupancy Date</label><input id="t_date" type="date"/></div>
+<div class="field"><label>Contact Number</label><input id="t_contact"/></div>
+<div class="field"><label>Contact Email Address</label><input id="t_email" type="email"/></div>
+<div class="field"><label># of Bedrooms</label><input id="t_bedrooms" min="0" type="number"/></div>
+<div class="field"><label># of Bathrooms</label><input id="t_bathrooms" min="0" type="number"/></div>
+<div class="field full">
+<button class="btn-primary" onclick="addTenant()" type="button">Add Record</button>
+</div>
+</div>
+<div class="table-wrap" style="margin-top:10px;">
+<table aria-label="Tenant records">
+<thead>
+<tr>
+<th>Name of Occupants</th>
+<th>Unit</th>
+<th>Rent</th>
+<th>Occupancy Date</th>
+<th>Contact</th>
+<th>Email</th>
+<th># Beds</th>
+<th># Baths</th>
+</tr>
+</thead>
+<tbody id="tenantBody"></tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- ACCOUNTING RUD FEES -->
+<section aria-label="Accounting RUD Fees" class="panel" id="panel-accounting" role="tabpanel">
+  <div class="section-header">Accounting RUD Fees</div>
+  <div class="section-card acct-wrap">
+
+    <div class="accounting-checks">
+      <table class="acct-table" aria-label="Check information">
+        <tr>
+          <td class="acct-label">Check Amount:</td>
+          <td class="acct-input"><input id="check_amount" placeholder="" /></td>
+        </tr>
+        <tr>
+          <td class="acct-label">Check Number:</td>
+          <td class="acct-input"><input id="check_number" placeholder="" /></td>
+        </tr>
+        <tr>
+          <td class="acct-label">Check Date:</td>
+          <td class="acct-input"><input id="check_date" type="date" /></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="fee-card" aria-label="RUD fee calculator">
+      <div class="fee-rate">
+        <div class="fee-rate-text">$1027 per dwelling unit</div>
+      </div>
+
+      <div class="fee-metrics">
+        <div class="fee-metric">
+          <div class="fee-metric-h">Number of Units</div>
+          <div class="fee-metric-v">
+            <input id="fee_units" type="number" min="0" step="1" placeholder="" />
+          </div>
+        </div>
+        <div class="fee-metric">
+          <div class="fee-metric-h">Total Fee</div>
+          <div class="fee-metric-v fee-total">
+            <input id="fee_total" type="text" value="$ 0.00" inputmode="decimal" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="muted" style="margin-top:10px;">
+      Total Fee is calculated as <strong>Number of Units × $1027</strong>.
+    </div>
+
+  </div>
+</section>
+
+</div>
+</div>
+</div>
+<script>
+    /* ===== Tabs ===== */
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const panels = {
+      contacts: document.getElementById("panel-contacts"),
+existing: document.getElementById("panel-existing"),
+      docs: document.getElementById("panel-docs"),
+      tenants: document.getElementById("panel-tenants"),
+      accounting: document.getElementById("panel-accounting")
+        };
+
+    function setActive(tabKey){
+      tabs.forEach(t => {
+        const isActive = t.dataset.tab === tabKey;
+        t.classList.toggle("active", isActive);
+        t.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+      Object.entries(panels).forEach(([k, el]) => { if(el) el.classList.toggle("active", k === tabKey); });
+    }
+
+    tabs.forEach(t => {
+      t.addEventListener("click", () => setActive(t.dataset.tab));
+      t.addEventListener("keydown", (e) => {
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          setActive(t.dataset.tab);
+        }
+      });
+    });
+
+    /* Existing Property: show date only when Yes */
+    (function(){
+      const sel = document.getElementById("withdrawnSelect");
+      const date = document.getElementById("withdrawnDate");
+      if(!sel || !date) return;
+      function sync(){
+        date.style.display = (sel.value || "").toLowerCase() === "yes" ? "block" : "none";
+        if(date.style.display === "none") date.value = "";
+      }
+      sel.addEventListener("change", sync);
+      sync();
+    })();
+
+    /* ===== Contacts table ===== */
+    const contactTypes = [
+      "Property Owner",
+      "Owner Representative",
+      "Applicant",
+      "Applicant Representative",
+      "Property Manager",
+      "Architect / Designer",
+      "Contractor",
+      "Other"
+    ];
+
+    let contacts = [
+      { type:"Property Owner", name:"", phone:"", email:"", address:"" }
+    ];
+
+    function contactTypeOptions(selected){
+      return contactTypes.map(t =>
+        `<option value="${escapeAttr(t)}" ${t===selected ? "selected" : ""}>${escapeHtml(t)}</option>`
+      ).join("");
+    }
+
+    function renderContacts(){
+      const body = document.getElementById("contactsBody");
+      body.innerHTML = "";
+
+      contacts.forEach((c, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <select class="t-select" aria-label="Contact type" onchange="updateContact(${idx}, 'type', this.value)">
+              ${contactTypeOptions(c.type || "")}
+            </select>
+          </td>
+          <td><input class="t-input" value="${escapeAttr(c.name||"")}" placeholder="Full name" oninput="updateContact(${idx}, 'name', this.value)" /></td>
+          <td><input class="t-input" value="${escapeAttr(c.phone||"")}" placeholder="(###) ###-####" oninput="updateContact(${idx}, 'phone', this.value)" /></td>
+          <td><input class="t-input" type="email" value="${escapeAttr(c.email||"")}" placeholder="name@email.com" oninput="updateContact(${idx}, 'email', this.value)" /></td>
+          <td><input class="t-input" value="${escapeAttr(c.address||"")}" placeholder="Street, City, State, ZIP" oninput="updateContact(${idx}, 'address', this.value)" /></td>
+          <td style="text-align:right;">
+            <button class="small-link" type="button" onclick="removeContact(${idx})">Remove</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function updateContact(i, key, val){
+      if(!contacts[i]) return;
+      contacts[i][key] = val;
+    }
+
+    function addContactRow(){
+      contacts.push({ type:"Other", name:"", phone:"", email:"", address:"" });
+      renderContacts();
+    }
+
+    function removeContact(i){
+      contacts.splice(i, 1);
+      if(contacts.length === 0) contacts.push({ type:"Other", name:"", phone:"", email:"", address:"" });
+      renderContacts();
+    }
+
+    function seedContacts(){
+      contacts = [
+        { type:"Property Owner", name:"Jane Owner", phone:"(213) 555-0101", email:"jane.owner@example.com", address:"1910 Sunset Blvd, Los Angeles, CA 90026" },
+        { type:"Applicant", name:"John Applicant", phone:"(213) 555-0102", email:"john.applicant@example.com", address:"1910 Sunset Blvd, Los Angeles, CA 90026" },
+        { type:"Property Manager", name:"Mary Manager", phone:"(213) 555-0103", email:"mary.manager@example.com", address:"1910 Sunset Blvd, Los Angeles, CA 90026" }
+      ];
+      renderContacts();
+    }
+
+    renderContacts();
+
+    /* ===== Existing Buildings table ===== */
+    let totalUnits = 0;
+    function addBuilding(){
+      const addressEl = document.getElementById("b_address");
+      const typeEl = document.getElementById("b_type");
+      const bedroomsEl = document.getElementById("b_bedrooms");
+      const unitsEl = document.getElementById("b_units");
+
+      const address = (addressEl.value || "").trim();
+      const type = (typeEl.value || "").trim();
+      const bedrooms = (bedroomsEl.value || "").trim();
+      const unitsStr = (unitsEl.value || "").trim();
+
+      if(!address || !type || !unitsStr){
+        alert("Please complete all building fields.");
+        return;
+      }
+      const units = parseInt(unitsStr, 10);
+      if(Number.isNaN(units) || units < 0){
+        alert("Units must be a valid number.");
+        return;
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(address)}</td>
+        <td>${escapeHtml(type)}</td>
+        <td>${escapeHtml(bedrooms)}</td>
+        <td style="text-align:center;">${units}</td>
+      `;
+      document.getElementById("buildingsTable").appendChild(tr);
+
+      totalUnits += units;
+      document.getElementById("totalUnits").textContent = totalUnits;
+
+      addressEl.value = "";
+      typeEl.value = "";
+      bedroomsEl.value = "";
+      unitsEl.value = "";
+    }
+
+    /* ===== Required Documents (Applicant upload + Staff attachment + Validated) ===== */
+    const attachments = [
+      { name: "Applicant's Affidavit + Owner's Acknowledgment", required: true, applicantFile:"", applicantStatus:"Missing", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Letter of Application", required: true, applicantFile:"", applicantStatus:"Missing", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Tenant Information Table (Mandatory for Occupied Units)", required: true, applicantFile:"", applicantStatus:"Missing", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Tenant Income Certification Form", required: false, applicantFile:"", applicantStatus:"N/A", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Owner Occupancy Proof", required: false, applicantFile:"", applicantStatus:"N/A", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Vacancy Proof (DWP bills)", required: false, applicantFile:"", applicantStatus:"N/A", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Grant Deed (Recorded)", required: true, applicantFile:"", applicantStatus:"Missing", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "Ellis documents / tenant relocation docs (if applicable)", required: false, applicantFile:"", applicantStatus:"N/A", decision:"", staffFile:"", rejectReason:"", validated:false },
+      { name: "City Planning Determination / Vesting letters (if applicable)", required: false, applicantFile:"", applicantStatus:"N/A", decision:"", staffFile:"", rejectReason:"", validated:false }
+    ];
+
+    function statusClass(s){
+      const v = (s || "").toLowerCase();
+      if(v === "uploaded") return "status-pill status-ok";
+      if(v === "missing") return "status-pill status-missing";
+      return "status-pill status-na";
+    }
+
+    function renderAttachments(){
+      const body = document.getElementById("attachBody");
+      body.innerHTML = "";
+
+      attachments.forEach((a, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight:900;">
+              ${escapeHtml(a.name)}${a.required ? ' <span style="color:#b91c1c;">*</span>' : ''}
+            </div>
+            <div class="note">${a.required ? "Required" : "Optional / If applicable"}</div>
+
+            <input type="file" id="appfile_${idx}" style="display:none" />
+            <input type="file" id="stafffile_${idx}" style="display:none" />
+          </td>
+
+          <td>
+            <div class="file-cell">
+              <div class="file-name" id="appname_${idx}">
+                ${a.applicantFile ? escapeHtml(a.applicantFile) : '<span style="opacity:.75;">No file selected</span>'}
+              </div>
+              <button class="mini-action" type="button" onclick="triggerApplicantUpload(${idx})" aria-label="Upload applicant file">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.34v4h4.66V9h3.34L12 2z"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+
+          <td>
+            <span class="${statusClass(a.applicantStatus)}" id="appstatus_${idx}">${escapeHtml(a.applicantStatus)}</span>
+          </td>
+
+          <td>
+            <select class="t-select" aria-label="Decision" onchange="setDecision(${idx}, this.value)">
+              <option value="" ${!a.decision ? 'selected' : ''}>-- Select --</option>
+              <option value="Approve" ${a.decision==='Approve' ? 'selected' : ''}>Approve</option>
+              <option value="Reject" ${a.decision==='Reject' ? 'selected' : ''}>Reject</option>
+            </select>
+          </td>
+
+          <td>
+            <input
+              class="t-input"
+              id="rejectreason_${idx}"
+              placeholder="Reason (required if rejected)"
+              value="${escapeAttr(a.rejectReason||"")}"
+              oninput="setRejectReason(${idx}, this.value)"
+              style="${a.decision==='Reject' ? '' : 'display:none;'}"
+            />
+            <div id="rejectreason_hint_${idx}" class="note" style="margin:0; ${a.decision==='Reject' ? 'display:none;' : ''}">—</div>
+          </td>
+
+          <td>
+            <div class="file-cell">
+              <div class="file-name" id="staffname_${idx}">
+                ${a.staffFile ? escapeHtml(a.staffFile) : '<span style="opacity:.75;">No staff file</span>'}
+              </div>
+              <button class="mini-action" type="button" onclick="triggerStaffUpload(${idx})" aria-label="Upload staff attachment">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16.5 6.5V17a4.5 4.5 0 0 1-9 0V6a3 3 0 1 1 6 0v10a1.5 1.5 0 0 1-3 0V7.5h-1.5V16a3 3 0 0 0 6 0V6a4.5 4.5 0 1 0-9 0v11a6 6 0 0 0 12 0V6.5h-1.5z"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+
+          <td style="text-align:center;">
+            <input type="checkbox" ${a.validated ? "checked" : ""} onchange="setValidated(${idx}, this.checked)" />
+          </td>
+        `;
+        body.appendChild(tr);
+
+        const appInput = tr.querySelector(`#appfile_${idx}`);
+        const staffInput = tr.querySelector(`#stafffile_${idx}`);
+
+        appInput.addEventListener("change", (e) => {
+          const f = e.target.files && e.target.files[0];
+          if(!f) return;
+          attachments[idx].applicantFile = f.name;
+          attachments[idx].applicantStatus = "Uploaded";
+          document.getElementById(`appname_${idx}`).textContent = f.name;
+          const st = document.getElementById(`appstatus_${idx}`);
+          st.className = statusClass("Uploaded");
+          st.textContent = "Uploaded";
+        });
+
+        staffInput.addEventListener("change", (e) => {
+          const f = e.target.files && e.target.files[0];
+          if(!f) return;
+          attachments[idx].staffFile = f.name;
+          document.getElementById(`staffname_${idx}`).textContent = f.name;
+        });
+      });
+    }
+
+    function triggerApplicantUpload(idx){
+      const el = document.getElementById(`appfile_${idx}`);
+      if(el) el.click();
+    }
+
+    function triggerStaffUpload(idx){
+      const el = document.getElementById(`stafffile_${idx}`);
+      if(el) el.click();
+    }
+
+    function setDecision(idx, val){
+      if(!attachments[idx]) return;
+      attachments[idx].decision = val;
+
+      const isReject = val === 'Reject';
+      if(!isReject){
+        attachments[idx].rejectReason = "";
+      }
+
+      // Toggle reject reason field visibility without re-rendering
+      const input = document.getElementById(`rejectreason_${idx}`);
+      const hint = document.getElementById(`rejectreason_hint_${idx}`);
+      if(input) input.style.display = isReject ? 'block' : 'none';
+      if(hint) hint.style.display = isReject ? 'none' : 'block';
+      if(input && !isReject) input.value = '';
+    }
+
+    function setRejectReason(idx, val){
+      if(!attachments[idx]) return;
+      attachments[idx].rejectReason = val;
+    }
+
+
+    function setValidated(idx, checked){
+      if(!attachments[idx]) return;
+      attachments[idx].validated = !!checked;
+    }
+    renderAttachments();
+
+    /* ===== Portal -> Backend bridge (loads from 2Portal_LandUseRUD.html) ===== */
+    const PORTAL_STORE_KEY = "LAHD_RUD_PORTAL_SUBMISSION";
+
+    function safeParse(json){
+      try{ return JSON.parse(json); }catch(e){ return null; }
+    }
+
+    function tryLoadPortalSubmission(){
+      const raw = (function(){ try{ return localStorage.getItem(PORTAL_STORE_KEY); }catch(e){ return null; } })();
+      if(!raw) return;
+      const data = safeParse(raw);
+      if(!data) return;
+
+      // ---- Project Info (top) ----
+      const pi = data.projectInfo || {};
+
+      // Project type checkboxes: match by value OR label text
+      const group = document.getElementById('top_project_type_group');
+      if(group && Array.isArray(pi.projectType)){
+        const wanted = new Set(pi.projectType.map(v => (v||'').toLowerCase()));
+        Array.from(group.querySelectorAll('label')).forEach(lbl => {
+          const cb = lbl.querySelector('input[type="checkbox"]');
+          if(!cb) return;
+          const val = (cb.value || '').toLowerCase();
+          const text = (lbl.textContent || '').trim().toLowerCase();
+          cb.checked = wanted.has(val) || wanted.has(text);
+        });
+        // ensure mirror updates
+        group.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if(el) el.value = (v ?? '');
+      };
+
+      setVal('top_proposed_project_type', pi.proposedProjectType);
+      setVal('top_entitlements', pi.entitlements);
+      setVal('top_ura', pi.ura);
+      const pal = document.getElementById('top_palisades');
+      if(pal) pal.checked = !!pi.palisades;
+      setVal('top_description', pi.description);
+      setVal('top_vesting', pi.vesting);
+      setVal('top_ladbs_build', pi.ladbsBuild);
+      setVal('top_ladbs_demo', pi.ladbsDemo);
+      setVal('top_dcp_case', pi.dcpCase);
+
+      // ---- Contacts ----
+      const mkContact = (type, obj) => ({
+        type,
+        name: (obj?.name || obj?.contactPerson || '').trim(),
+        phone: (obj?.phone || obj?.cell || '').trim(),
+        email: (obj?.email || '').trim(),
+        address: (obj?.address || '').trim()
+      });
+
+      const newContacts = [];
+      if(data.owner && (data.owner.name || data.owner.contactPerson)) newContacts.push(mkContact('Property Owner', data.owner));
+      if(data.ownerContact && (data.ownerContact.contactPerson || data.ownerContact.title)) newContacts.push(mkContact('Owner Representative', { name: data.ownerContact.contactPerson, phone: data.ownerContact.phone, email: data.ownerContact.email, address: data.ownerContact.address }));
+      if(data.applicant && (data.applicant.name || data.applicant.contactPerson)) newContacts.push(mkContact('Applicant', data.applicant));
+
+      if(newContacts.length){
+        contacts = newContacts;
+        renderContacts();
+      }
+
+      // ---- Existing property fields (no ids in markup; select by order) ----
+      const ep = data.existingProperty || {};
+      const existingInputs = Array.from(document.querySelectorAll('#panel-existing .existing-prop-input'));
+      // expected order: APN, LOT, COO select, LOT TIE select, withdrawn select, withdrawn date
+      if(existingInputs.length >= 6){
+        existingInputs[0].value = ep.apn || '';
+        existingInputs[1].value = ep.lot || '';
+        existingInputs[2].value = ep.coo || '';
+        existingInputs[3].value = ep.lotTie || '';
+        // withdrawn select is #withdrawnSelect
+        const wSel = document.getElementById('withdrawnSelect');
+        if(wSel) wSel.value = ep.withdrawn || '';
+        const wDate = document.getElementById('withdrawnDate');
+        if(wDate) wDate.value = ep.withdrawnDate || '';
+      }
+      // Existing description textarea
+      const descTa = document.querySelector('#panel-existing textarea');
+      if(descTa) descTa.value = (data.existingDescription || '');
+
+      // ---- Existing buildings table ----
+      const buildings = Array.isArray(data.buildings) ? data.buildings : [];
+      if(buildings.length){
+        const tbody = document.getElementById('buildingsTable');
+        if(tbody){
+          tbody.innerHTML = '';
+          totalUnits = 0;
+          buildings.forEach(b => {
+            const tr = document.createElement('tr');
+            const units = parseInt((b.units || '').toString(), 10);
+            const unitsNum = Number.isFinite(units) ? units : 0;
+            totalUnits += unitsNum;
+            tr.innerHTML = `
+              <td>${escapeHtml(b.addressUnits || '')}</td>
+              <td>${escapeHtml(b.type || '')}</td>
+              <td>${escapeHtml(b.bedrooms || '')}</td>
+              <td style="text-align:center;">${unitsNum || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+          const total = document.getElementById('totalUnits');
+          if(total) total.textContent = String(totalUnits);
+        }
+      }
+
+      // ---- Required docs: set applicant file name + status by index ----
+      const uploaded = Array.isArray(data.uploadedDocs) ? data.uploadedDocs : [];
+      uploaded.forEach((fname, idx) => {
+        if(!fname || !attachments[idx]) return;
+        attachments[idx].applicantFile = fname;
+        attachments[idx].applicantStatus = 'Uploaded';
+      });
+      renderAttachments();
+
+      // ---- Tenants ----
+      const tenants = Array.isArray(data.tenants) ? data.tenants : [];
+      if(tenants.length){
+        const body = document.getElementById('tenantBody');
+        if(body){
+          body.innerHTML = '';
+          tenants.forEach(t => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${escapeHtml(t.name || '')}</td>
+              <td>${escapeHtml(t.unit || '')}</td>
+              <td>${escapeHtml(t.rent || '')}</td>
+              <td>${escapeHtml(t.date || '')}</td>
+              <td>${escapeHtml(t.contact || '')}</td>
+              <td>${escapeHtml(t.email || '')}</td>
+              <td style="text-align:center;">${escapeHtml(t.beds || '')}</td>
+              <td style="text-align:center;">${escapeHtml(t.baths || '')}</td>
+            `;
+            body.appendChild(tr);
+          });
+        }
+      }
+
+      // If withdrawn select changed, run existing logic to show/hide date
+      const ws = document.getElementById('withdrawnSelect');
+      if(ws) ws.dispatchEvent(new Event('change', { bubbles:true }));
+
+      // Optional: switch to Contacts tab first
+      // setActive('contacts');
+
+      console.info('Loaded portal submission into backend UI', data.meta || {});
+    }
+
+    // Run after initial UI wiring
+    tryLoadPortalSubmission();
+
+
+    /* ===== Tenant Table ===== */
+    function addTenant(){
+      const get = (id) => (document.getElementById(id)?.value || "").trim();
+
+      const name = get("t_name");
+      const unit = get("t_unit");
+      const rent = get("t_rent");
+      const date = get("t_date");
+      const contact = get("t_contact");
+      const email = get("t_email");
+      const beds = get("t_bedrooms");
+      const baths = get("t_bathrooms");
+
+      if(!name || !unit || !rent || !date || !contact || !email){
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(name)}</td>
+        <td>${escapeHtml(unit)}</td>
+        <td>${escapeHtml(rent)}</td>
+        <td>${escapeHtml(date)}</td>
+        <td>${escapeHtml(contact)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td style="text-align:center;">${escapeHtml(beds)}</td>
+        <td style="text-align:center;">${escapeHtml(baths)}</td>
+      `;
+      document.getElementById("tenantBody").appendChild(tr);
+
+      ["t_name","t_unit","t_rent","t_date","t_contact","t_email","t_bedrooms","t_bathrooms"]
+        .forEach(id => document.getElementById(id).value = "");
+    }
+
+    /* ===== RUD Record Number helpers ===== */
+    (function syncRudRecordNumber(){
+      const full = (document.getElementById('caseNumberTop')?.textContent || '').trim();
+      if(!full) return;
+      const el = document.getElementById('rudRecordNumber');
+      if(el) el.value = full;
+    })();
+
+
+    /* ===== Backend -> Portal (Revision Needed) bridge ===== */
+    const BACKEND_REVIEW_KEY = "LAHD_RUD_BACKEND_REVIEW";
+
+    function safeStringify(obj){
+      try{ return JSON.stringify(obj); }catch(e){ return ""; }
+    }
+
+    function saveBackendReview(action){
+      const caseNo = (document.getElementById('caseNumberTop')?.textContent || document.getElementById('caseNumberSub')?.textContent || '').trim();
+      const payload = {
+        action: action || '',
+        caseNumber: caseNo,
+        reviewedAt: new Date().toISOString(),
+        attachments: (Array.isArray(attachments) ? attachments : []).map(a => ({
+          name: a?.name || '',
+          required: !!a?.required,
+          applicantFile: a?.applicantFile || '',
+          applicantStatus: a?.applicantStatus || '',
+          decision: a?.decision || '',
+          staffFile: a?.staffFile || '',
+          rejectReason: a?.rejectReason || '',
+          validated: !!a?.validated
+        }))
+      };
+
+      try{ localStorage.setItem(BACKEND_REVIEW_KEY, safeStringify(payload)); }catch(e){ /* ignore */ }
+    }
+
+    function goToRevisionNeeded(){
+      // Keep files in same folder so a relative path works
+      window.location.href = '5 Portal _LandUseRevisionNeeded.flow.fixed.html';
+    }
+
+    /* ===== Actions ===== */
+    function doUpdate(){
+      // Save current review state (if any) and move to the next backend step
+      saveBackendReview('Update');
+      window.location.href = '4 Backend_LandUse.step5.html';
+    }
+    function doReject(){
+      // Persist document decisions so the portal can display Approved/Rejected lists
+      const st = document.getElementById('caseStatus');
+      if(st) st.value = 'Revision Needed';
+      saveBackendReview('Reject');
+
+      const ok = confirm('Reject this record?');
+      if(!ok) return;
+
+      // Route applicant to Revision Needed page
+      goToRevisionNeeded();
+    }
+    function doApprove(){
+      // Persist document decisions so the portal can display Approved/Rejected lists
+      const st = document.getElementById('caseStatus');
+      if(st) st.value = 'Complete';
+      saveBackendReview('Approve');
+
+      const ok = confirm('Approve this record?');
+      if(!ok) return;
+
+      alert('Approved (saved review data).');
+    }
+
+    /* ===== Escape helpers ===== */
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function escapeAttr(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;");
+    }
+
+    /* ===== Project Info: mirror top fields <-> Project Information tab ===== */
+    (function(){
+      function $(id){ return document.getElementById(id); }
+
+      // Checkbox-group helpers (Project Type)
+      function getGroupValues(group){
+        if(!group) return [];
+        return Array.from(group.querySelectorAll('input[type="checkbox"][value]'))
+          .filter(cb => cb.checked)
+          .map(cb => cb.value);
+      }
+      function setGroupValues(group, values){
+        if(!group) return;
+        const set = new Set(values || []);
+        group.querySelectorAll('input[type="checkbox"][value]').forEach(cb => {
+          cb.checked = set.has(cb.value);
+        });
+      }
+
+      function bindText(a, b){
+        if(!a || !b) return;
+        const syncAtoB = () => { b.value = a.value; };
+        const syncBtoA = () => { a.value = b.value; };
+        a.addEventListener('input', syncAtoB);
+        b.addEventListener('input', syncBtoA);
+        syncAtoB();
+      }
+
+      function bindSelect(a, b){
+        if(!a || !b) return;
+        const syncAtoB = () => { b.value = a.value; };
+        const syncBtoA = () => { a.value = b.value; };
+        a.addEventListener('change', syncAtoB);
+        b.addEventListener('change', syncBtoA);
+        syncAtoB();
+      }
+
+      function bindCheckbox(a, b){
+        if(!a || !b) return;
+        const syncAtoB = () => { b.checked = a.checked; };
+        const syncBtoA = () => { a.checked = b.checked; };
+        a.addEventListener('change', syncAtoB);
+        b.addEventListener('change', syncBtoA);
+        syncAtoB();
+      }
+
+      function bindCheckboxGroup(a, b){
+        if(!a || !b) return;
+        const syncAtoB = () => setGroupValues(b, getGroupValues(a));
+        const syncBtoA = () => setGroupValues(a, getGroupValues(b));
+
+        a.addEventListener('change', (e) => {
+          if(e.target && e.target.matches('input[type="checkbox"]')) syncAtoB();
+        });
+        b.addEventListener('change', (e) => {
+          if(e.target && e.target.matches('input[type="checkbox"]')) syncBtoA();
+        });
+
+        // initial
+        syncAtoB();
+      }
+
+      // Mirror pairs
+      bindCheckboxGroup($('top_project_type_group'), $('pi_project_type_group'));
+      bindSelect($('top_proposed_project_type'), $('pi_proposed_project_type'));
+      bindSelect($('top_entitlements'), $('pi_entitlements'));
+      bindSelect($('top_ura'), $('pi_ura'));
+      bindCheckbox($('top_palisades'), $('pi_palisades'));
+      bindText($('top_description'), $('pi_description'));
+      bindSelect($('top_vesting'), $('pi_vesting'));
+      bindText($('top_ladbs_build'), $('pi_ladbs_build'));
+      bindText($('top_ladbs_demo'), $('pi_ladbs_demo'));
+      bindText($('top_dcp_case'), $('pi_dcp_case'));
+    })();
+
+  
+    /* ===== Accounting Fee Calc ===== */
+    const FEE_RATE = 1027;
+    const feeUnitsEl = document.getElementById("fee_units");
+    const feeTotalEl = document.getElementById("fee_total");
+    let feeTotalManual = false;
+
+    function fmtCurrency(n){
+      try{
+        return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }catch(e){
+        return (Math.round(n*100)/100).toFixed(2);
+      }
+    }
+
+    function recalcFee(){
+      const raw = (feeUnitsEl?.value || "").toString().trim();
+      const units = raw === "" ? 0 : Number(raw);
+      const safeUnits = Number.isFinite(units) ? units : 0;
+      const total = safeUnits * FEE_RATE;
+      if (feeTotalEl && !feeTotalManual) feeTotalEl.value = "$ " + fmtCurrency(total);
+    }
+
+    if (feeUnitsEl){
+      feeUnitsEl.addEventListener("input", () => {
+        feeTotalManual = false;
+        // Keep numeric-only (but allow empty)
+        feeUnitsEl.value = feeUnitsEl.value.replace(/[^0-9]/g, "");
+        recalcFee();
+      });
+      recalcFee();
+    }
+
+    if (feeTotalEl){
+      feeTotalEl.addEventListener("input", () => {
+        feeTotalManual = true;
+        const v = (feeTotalEl.value || "").toString();
+        if (v.trim() === "") return;
+        if (!v.trim().startsWith("$")){
+          feeTotalEl.value = "$ " + v.replace(/^\$\s*/, "");
+        }
+      });
+    }
+</script>
+</div></div></body>
+</html>
